@@ -22,7 +22,10 @@ classifiers = [
   "Topic :: Internet :: WWW/HTTP",
   "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+  "aiofiles>=24.1",
+  "aiohttp>=3.11",
+]
 
 [project.optional-dependencies]
 dev = [
