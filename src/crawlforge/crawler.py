@@ -8,6 +8,8 @@ from types import TracebackType
 
 import aiohttp
 
+from crawlforge.parser import HTMLParser, ParsedPage
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,6 +40,7 @@ class AsyncCrawler:
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._session_lock = asyncio.Lock()
         self._session: aiohttp.ClientSession | None = None
+        self._parser = HTMLParser()
         self._closed = False
 
     async def __aenter__(self) -> AsyncCrawler:
@@ -89,6 +92,11 @@ class AsyncCrawler:
             *(self.fetch_url(url) for url in requested_urls),
         )
         return dict(zip(requested_urls, pages, strict=True))
+
+    async def fetch_and_parse(self, url: str) -> ParsedPage:
+        """Download one URL and return its structured HTML content."""
+        html = await self.fetch_url(url)
+        return await self._parser.parse_html(html, url)
 
     async def close(self) -> None:
         """Close the pooled HTTP session; repeated calls are safe."""

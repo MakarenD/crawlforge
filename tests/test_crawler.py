@@ -48,6 +48,107 @@ async def test_fetch_url_returns_body_and_logs_success(
 
 
 @pytest.mark.asyncio
+async def test_fetch_and_parse_returns_structured_page() -> None:
+    """Downloading and parsing share the crawler's HTTP lifecycle."""
+
+    async def page(request: web.Request) -> web.Response:
+        return web.Response(
+            text=(
+                "<title>Local page</title><h1>Heading</h1>"
+                '<a href="/next">Next</a><img src="/image.png" alt="Image">'
+            ),
+            content_type="text/html",
+        )
+
+    app = web.Application()
+    app.router.add_get("/page", page)
+
+    async with serve(app) as server, AsyncCrawler() as crawler:
+        url = str(server.make_url("/page"))
+        next_url = str(server.make_url("/next"))
+        image_url = str(server.make_url("/image.png"))
+        result = await crawler.fetch_and_parse(url)
+
+    assert result["url"] == url
+    assert result["title"] == "Local page"
+    assert result["text"] == "Heading Next"
+    assert result["links"] == [next_url]
+    assert result["images"] == [
+        {"src": image_url, "alt": "Image"},
+    ]
+    assert result["headings"] == [{"level": 1, "text": "Heading"}]
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_parse_http_error_returns_empty_page(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A download failure still returns the structured parsing contract."""
+
+    async def missing(request: web.Request) -> web.Response:
+        raise web.HTTPNotFound()
+
+    app = web.Application()
+    app.router.add_get("/missing", missing)
+
+    async with serve(app) as server, AsyncCrawler() as crawler:
+        url = str(server.make_url("/missing"))
+        with caplog.at_level(logging.WARNING, logger="crawlforge.crawler"):
+            result = await crawler.fetch_and_parse(url)
+
+    assert result == {
+        "url": url,
+        "title": "",
+        "text": "",
+        "links": [],
+        "metadata": {"title": "", "description": "", "keywords": ""},
+        "images": [],
+        "headings": [],
+        "tables": [],
+        "lists": [],
+    }
+    assert f"HTTP error for {url}: 404" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_parse_cancellation_releases_capacity() -> None:
+    """Cancelling the integrated operation does not consume a semaphore slot."""
+    request_started = asyncio.Event()
+    release_request = asyncio.Event()
+
+    async def blocked(request: web.Request) -> web.Response:
+        request_started.set()
+        await release_request.wait()
+        return web.Response(text="<p>blocked</p>")
+
+    async def ok(request: web.Request) -> web.Response:
+        return web.Response(text="<title>OK</title><p>ready</p>")
+
+    app = web.Application()
+    app.router.add_get("/blocked", blocked)
+    app.router.add_get("/ok", ok)
+
+    async with serve(app) as server, AsyncCrawler(max_concurrent=1) as crawler:
+        task = asyncio.create_task(
+            crawler.fetch_and_parse(str(server.make_url("/blocked"))),
+        )
+        await asyncio.wait_for(request_started.wait(), timeout=5)
+        task.cancel()
+
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+        release_request.set()
+        result = await asyncio.wait_for(
+            crawler.fetch_and_parse(str(server.make_url("/ok"))),
+            timeout=5,
+        )
+
+    assert result["title"] == "OK"
+    assert result["text"] == "ready"
+
+
+@pytest.mark.asyncio
 async def test_fetch_urls_isolates_http_errors(
     caplog: pytest.LogCaptureFixture,
 ) -> None:

@@ -25,6 +25,8 @@ classifiers = [
 dependencies = [
   "aiofiles>=24.1",
   "aiohttp>=3.11",
+  "beautifulsoup4>=4.12",
+  "lxml>=5.3",
 ]
 
 [project.optional-dependencies]
