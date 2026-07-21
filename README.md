@@ -6,10 +6,10 @@ observable web crawling.
 
 ## Status
 
-CrawlForge provides an importable asynchronous HTTP client and a command-line
-interface with help and version output. The client supports pooled connections,
-configurable connection and read timeouts, bounded concurrency, and request
-lifecycle logging.
+CrawlForge provides an importable asynchronous HTTP client, structured HTML
+parsing, and a command-line interface with help and version output. The client
+supports pooled connections, configurable connection and read timeouts, bounded
+concurrency, and request lifecycle logging.
 
 ## Asynchronous HTTP client
 
@@ -49,6 +49,40 @@ outcome. Task cancellation is not converted into an empty result.
 Use the asynchronous context manager when possible. For manual lifecycle
 management, always call `await crawler.close()` in a `finally` block.
 
+## HTML parsing and data extraction
+
+`HTMLParser` extracts page text, metadata, absolute HTTP links, images,
+`h1`–`h3` headings, tables, and ordered or unordered lists. Parsing runs in a
+worker thread so malformed or large documents do not block the event loop.
+
+```python
+import asyncio
+
+from crawlforge import AsyncCrawler
+
+
+async def main() -> None:
+    async with AsyncCrawler() as crawler:
+        page = await crawler.fetch_and_parse("https://example.com")
+
+    print(page["title"])
+    print(page["links"])
+    print(page["metadata"])
+
+
+asyncio.run(main())
+```
+
+`fetch_and_parse()` returns a stable dictionary with `url`, `title`, `text`,
+`links`, `metadata`, `images`, `headings`, `tables`, and `lists`. Relative links
+and image sources are resolved against the requested URL. Empty values,
+unsupported schemes, invalid URLs, and duplicate links are excluded; URL
+fragments are removed. External HTTP links are retained.
+
+The parser recovers available data from malformed HTML. If document creation or
+one extractor fails, it logs a warning and returns the fields it could produce.
+A download failure uses the same result shape with empty extracted values.
+
 The example script compares sequential and concurrent downloads and reports
 the status of each request:
 
@@ -56,13 +90,19 @@ the status of each request:
 python examples/async_fetch.py
 ```
 
-The example accesses public websites and is intended for manual use. Automated
-tests run only against ephemeral local HTTP servers.
+The parsing example downloads several pages concurrently and prints titles,
+links, headings, and extraction statistics as JSON:
+
+```bash
+python examples/parse_pages.py
+```
+
+The examples access public websites and are intended for manual use. Automated
+tests run only against ephemeral local HTTP servers and in-memory HTML fixtures.
 
 ## Planned capabilities
 
 - URL queueing and per-host rate limiting
-- HTML parsing and link extraction
 - `robots.txt` support, retries, and sitemap discovery
 - Pluggable storage, runtime statistics, and reports
 - Configuration files and an extensible CLI
