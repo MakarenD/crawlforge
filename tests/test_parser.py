@@ -112,6 +112,50 @@ def test_extract_text_supports_css_selector_and_missing_match() -> None:
     assert parser.extract_text(soup, ".missing") == ""
 
 
+def test_extract_links_filters_invalid_and_duplicate_targets() -> None:
+    """Link extraction keeps unique HTTP targets and rejects invalid schemes."""
+    parser = HTMLParser()
+    soup = BeautifulSoup(
+        """
+        <a href="https://external.example/page#intro">first</a>
+        <a href="https://external.example/page#details">duplicate</a>
+        <a href="mailto:team@example.com">email</a>
+        <a href="javascript:void(0)">script</a>
+        <a href="data:text/plain,ignored">data</a>
+        <a href="">empty</a>
+        """,
+        "lxml",
+    )
+
+    assert parser.extract_links(soup, "https://example.com/base/") == [
+        "https://external.example/page",
+    ]
+
+
+def test_extract_links_converts_relative_urls_to_absolute() -> None:
+    """Relative, root-relative, and protocol-relative links become absolute."""
+    parser = HTMLParser()
+    soup = BeautifulSoup(
+        """
+        <a href="../guide">parent</a>
+        <a href="/about">root</a>
+        <a href="?page=2">query</a>
+        <a href="//cdn.example.com/asset">protocol relative</a>
+        """,
+        "lxml",
+    )
+
+    assert parser.extract_links(
+        soup,
+        "https://example.com/docs/current/page.html",
+    ) == [
+        "https://example.com/docs/guide",
+        "https://example.com/about",
+        "https://example.com/docs/current/page.html?page=2",
+        "https://cdn.example.com/asset",
+    ]
+
+
 @pytest.mark.asyncio
 async def test_malformed_html_returns_available_data() -> None:
     """The tolerant lxml parser recovers useful data from broken markup."""
