@@ -1,5 +1,7 @@
 # CrawlForge
 
+[![CI][ci-badge]][ci-workflow]
+
 CrawlForge is a high-performance asynchronous web crawler for Python. The
 project is being built as a composable foundation for reliable, polite, and
 observable web crawling.
@@ -143,6 +145,10 @@ Run static type checking:
 mypy
 ```
 
+GitHub Actions runs the full test suite on Python 3.12, 3.13, and 3.14. Pull
+requests also run linting, formatting, type checking, CLI, dependency, and
+package-build validation.
+
 ## Command-line interface
 
 ```bash
@@ -159,3 +165,6 @@ crawlforge --help
 ## License
 
 Distributed under the [MIT License](LICENSE).
+
+[ci-badge]: https://github.com/MakarenD/crawlforge/actions/workflows/ci.yml/badge.svg
+[ci-workflow]: https://github.com/MakarenD/crawlforge/actions/workflows/ci.yml

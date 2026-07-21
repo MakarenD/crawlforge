@@ -48,6 +48,22 @@ async def test_fetch_url_returns_body_and_logs_success(
 
 
 @pytest.mark.asyncio
+async def test_fetch_url_returns_empty_string_for_missing_page(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A missing page is isolated as an empty fetch result."""
+    app = web.Application()
+
+    async with serve(app) as server, AsyncCrawler() as crawler:
+        url = str(server.make_url("/missing"))
+        with caplog.at_level(logging.WARNING, logger="crawlforge.crawler"):
+            result = await crawler.fetch_url(url)
+
+    assert result == ""
+    assert f"HTTP error for {url}: 404 (ClientResponseError)" in caplog.text
+
+
+@pytest.mark.asyncio
 async def test_fetch_and_parse_returns_structured_page() -> None:
     """Downloading and parsing share the crawler's HTTP lifecycle."""
 
