@@ -8,10 +8,74 @@ observable web crawling.
 
 ## Status
 
-CrawlForge provides an importable asynchronous HTTP client, structured HTML
-parsing, and a command-line interface with help and version output. The client
-supports pooled connections, configurable connection and read timeouts, bounded
-concurrency, and request lifecycle logging.
+CrawlForge provides queue-driven website crawling, an importable asynchronous
+HTTP client, structured HTML parsing, and a command-line interface with help and
+version output. Crawls support depth and page limits, URL filters, duplicate
+suppression, global and per-domain concurrency, live progress logging, and
+structured success and failure state.
+
+## Queue-driven website crawling
+
+```python
+import asyncio
+
+from crawlforge import AsyncCrawler
+
+
+async def main() -> None:
+    async with AsyncCrawler(
+        max_concurrent=10,
+        max_concurrent_per_domain=2,
+        max_depth=2,
+    ) as crawler:
+        pages = await crawler.crawl(
+            ["https://example.com"],
+            max_pages=50,
+            same_domain_only=True,
+            exclude_patterns=[r"/private(?:/|$)"],
+        )
+
+    print(f"Processed: {len(pages)} pages")
+    print(f"Failed: {len(crawler.failed_urls)} pages")
+
+
+asyncio.run(main())
+```
+
+`CrawlerQueue` orders URLs by descending integer priority and preserves
+insertion order when priorities match. It ignores duplicate URLs across queued,
+active, processed, and failed states. `SemaphoreManager` applies both a global
+request limit and an optional per-domain limit while exposing active and peak
+request counts.
+
+`AsyncCrawler.crawl()` always processes valid starting URLs. Discovered links
+can be restricted to the starting hostnames with `same_domain_only`, excluded
+by `exclude_patterns`, or admitted only by `include_patterns`. Patterns are
+regular expressions matched against the complete normalized URL. Fragments are
+removed before queueing, and each normalized URL is visited at most once.
+
+Depth zero contains only the starting URLs. Links found on a page at
+`max_depth` are not queued. `max_pages` limits attempted pages exactly; any
+remaining URLs stay visible in queue statistics.
+
+The crawler exposes:
+
+- `visited_urls`, containing every attempted URL;
+- `processed_urls`, mapping successful URLs to structured `ParsedPage` data;
+- `failed_urls`, mapping failed URLs to error descriptions;
+- `get_stats()`, reporting processed, queued, active, failed, visited, and
+  pages-per-second values.
+
+Progress is logged after every completed page at `INFO` level. The complete
+demonstration accepts one or more starting URLs, shows live progress, and saves
+successful pages, failures, and final statistics as JSON:
+
+```bash
+python examples/crawl_site.py https://example.com \
+  --max-depth 2 \
+  --max-pages 50 \
+  --output crawl-output.json
+```
 
 ## Asynchronous HTTP client
 
@@ -77,7 +141,8 @@ asyncio.run(main())
 
 `fetch_and_parse()` returns a stable dictionary with `url`, `title`, `text`,
 `links`, `metadata`, `images`, `headings`, `tables`, and `lists`. Relative links
-and image sources are resolved against the requested URL. Empty values,
+and image sources are resolved against the final response URL after redirects,
+while the result's `url` field preserves the requested URL. Empty values,
 unsupported schemes, invalid URLs, and duplicate links are excluded; URL
 fragments are removed. External HTTP links are retained.
 
@@ -85,8 +150,8 @@ The parser recovers available data from malformed HTML. If document creation or
 one extractor fails, it logs a warning and returns the fields it could produce.
 A download failure uses the same result shape with empty extracted values.
 
-The example script compares sequential and concurrent downloads and reports
-the status of each request:
+The HTTP example compares sequential and concurrent downloads and reports the
+status of each request:
 
 ```bash
 python examples/async_fetch.py
@@ -104,9 +169,8 @@ tests run only against ephemeral local HTTP servers and in-memory HTML fixtures.
 
 ## Planned capabilities
 
-- URL queueing and per-host rate limiting
 - `robots.txt` support, retries, and sitemap discovery
-- Pluggable storage, runtime statistics, and reports
+- Pluggable storage and crawl reports
 - Configuration files and an extensible CLI
 
 ## Requirements

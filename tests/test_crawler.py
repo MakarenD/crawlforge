@@ -96,6 +96,32 @@ async def test_fetch_and_parse_returns_structured_page() -> None:
 
 
 @pytest.mark.asyncio
+async def test_fetch_and_parse_uses_redirect_destination_as_link_base() -> None:
+    """Redirects change link resolution without changing requested URL identity."""
+
+    async def old(request: web.Request) -> web.StreamResponse:
+        raise web.HTTPFound("/dir/page")
+
+    async def page(request: web.Request) -> web.Response:
+        return web.Response(
+            text='<a href="next">Next</a>',
+            content_type="text/html",
+        )
+
+    app = web.Application()
+    app.router.add_get("/old", old)
+    app.router.add_get("/dir/page", page)
+
+    async with serve(app) as server, AsyncCrawler() as crawler:
+        requested = str(server.make_url("/old"))
+        expected_link = str(server.make_url("/dir/next"))
+        result = await crawler.fetch_and_parse(requested)
+
+    assert result["url"] == requested
+    assert result["links"] == [expected_link]
+
+
+@pytest.mark.asyncio
 async def test_fetch_and_parse_http_error_returns_empty_page(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
