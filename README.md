@@ -16,6 +16,156 @@ structured success and failure state. Requests support per-domain or global
 rate limiting, robots.txt enforcement, configurable delays, User-Agent
 rotation, classified failures, configurable retries with exponential backoff,
 retry statistics, and asynchronous JSON, CSV, or SQLite persistence.
+The integrated crawler also supports recursive sitemap indexes, validated JSON
+configuration, advanced status and domain statistics, JSON and standalone HTML
+reports, rotating file logs, live percentage/speed/ETA reporting, and a
+production command-line entry point.
+
+## Integrated crawler
+
+`AdvancedCrawler` composes the existing queue, concurrency, politeness, retry,
+parsing, and storage components. It adds sitemap discovery, configuration,
+reporting, and a no-argument `crawl()` operation:
+
+```python
+import asyncio
+
+from crawlforge import AdvancedCrawler
+
+
+async def main() -> None:
+    crawler = AdvancedCrawler.from_config("crawler.json")
+    try:
+        await crawler.crawl()
+        stats = crawler.get_stats()
+        print(f"Processed: {stats['total_pages']} pages")
+        print(f"Successful: {stats['successful']}")
+        print(f"Failed: {stats['failed']}")
+        crawler.export_to_html_report("report.html")
+    finally:
+        await crawler.close()
+
+
+asyncio.run(main())
+```
+
+The asynchronous context manager is also supported. Configured result reports
+are written in worker threads after the crawl, and all HTTP, sitemap, and
+storage resources are closed together.
+
+## Sitemap support
+
+`SitemapParser.fetch_sitemap()` accepts both `urlset` documents and recursive
+`sitemapindex` trees. It handles XML namespaces, preserves first-seen URL order,
+deduplicates pages and sitemap documents, and stops index cycles.
+
+```python
+import asyncio
+
+from crawlforge import SitemapParser
+
+
+async def discover() -> None:
+    async with SitemapParser() as parser:
+        urls = await parser.fetch_sitemap(
+            "https://example.com/sitemap.xml",
+        )
+    print(len(urls))
+
+
+asyncio.run(discover())
+```
+
+The standalone parser owns a lazy `aiohttp` session. Inside `AdvancedCrawler`,
+it instead uses the crawler's asynchronous fetch path, so rate limits,
+robots.txt rules, retries, redirects, User-Agent selection, and request
+timeouts remain consistent. Traversal is bounded by configurable depth,
+sitemap count, URL count, and per-document byte limits. Invalid XML, unsupported
+roots, relative locations, and non-HTTP locations fail with source-aware
+errors.
+
+Sitemap page URLs are regular crawl seeds after they pass configured
+same-domain, include, and exclude filters. Explicit `urls` remain starting URLs
+and preserve the existing `AsyncCrawler` behavior. A failed sitemap is recorded
+in `sitemap_failures` without discarding seeds from other sources. If every
+configured source is empty, invalid, or filtered out, the crawl fails before
+starting page tasks.
+
+## JSON configuration
+
+Configuration paths are resolved relative to the configuration file. Unknown
+options and invalid values fail before network or output resources are opened.
+Command-line values override only the options explicitly supplied:
+
+```json
+{
+  "urls": ["https://example.com/"],
+  "sitemaps": ["https://example.com/sitemap.xml"],
+  "crawler": {
+    "max_pages": 100,
+    "max_depth": 2,
+    "max_concurrent": 10,
+    "max_concurrent_per_domain": 2,
+    "rate_limit": 2.0,
+    "rate_limit_per_domain": true,
+    "respect_robots": true,
+    "min_delay": 0.0,
+    "jitter": 0.0,
+    "max_retries": 2,
+    "connect_timeout": 10.0,
+    "read_timeout": 30.0,
+    "total_timeout": 60.0
+  },
+  "filters": {
+    "same_domain_only": true,
+    "include": ["/docs/"],
+    "exclude": ["/private/"]
+  },
+  "storage": {
+    "format": "json",
+    "path": "pages.jsonl",
+    "json_lines": true
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "crawlforge.log",
+    "max_bytes": 5000000,
+    "backup_count": 3
+  },
+  "reports": {
+    "json": "results.json",
+    "html": "report.html"
+  }
+}
+```
+
+The `storage.format` value can be `json`, `csv`, or `sqlite`. JSON storage also
+accepts `json_lines`, `indent`, and `encoding`; CSV accepts `encoding`; SQLite
+accepts `batch_size`. Omit `storage` to keep results only in memory. Either
+`urls`, `sitemaps`, or both must contain at least one absolute HTTP URL.
+
+The complete checked example is
+[`examples/advanced_config.json`](examples/advanced_config.json), with a Python
+runner in [`examples/advanced_crawl.py`](examples/advanced_crawl.py).
+
+## Statistics, reports, and live progress
+
+`CrawlerStats` records total, successful, and failed pages; average processing
+speed; elapsed time; HTTP status-code distribution; and the ten busiest
+domains. Live snapshots also include completion percentage, estimated remaining
+time, queued pages, and active page tasks. `AsyncCrawler.get_advanced_stats()`
+exposes these metrics without changing the established `get_stats()` contract.
+`AdvancedCrawler.get_stats()` returns both sets in one mapping.
+
+Every completed page writes an `INFO` progress record containing counts,
+pages/second, percentage, ETA, and active tasks. `configure_logging()` installs
+timestamped console output plus an optional `RotatingFileHandler`; repeated
+configuration replaces only handlers owned by CrawlForge.
+
+`AdvancedCrawler.export_to_json()` writes statistics, successful parsed pages,
+and failures. `export_to_html_report()` creates a standalone escaped HTML file
+with summary cards, status-code and domain bar charts, and success/failure
+tables. `CrawlerStats` also provides statistics-only JSON and HTML exporters.
 
 ## Queue-driven website crawling
 
@@ -350,10 +500,20 @@ three generated data files:
 python examples/storage_crawl.py --output-dir storage-output
 ```
 
-## Planned capabilities
+## Performance benchmark
 
-- Sitemap discovery
-- Configuration files and an extensible CLI
+The deterministic benchmark starts a local threaded HTTP server with a fixed
+5 ms response delay, compares sequential fetch-and-parse work with
+`AsyncCrawler`, and measures asynchronous peak memory with `tracemalloc`. The
+default workloads contain 100, 500, and 1000 unique pages:
+
+```bash
+python examples/performance_benchmark.py
+```
+
+It reports measurements instead of enforcing machine-specific timing
+thresholds. Concurrency correctness and bounded scheduling remain covered by
+event-driven automated tests.
 
 ## Requirements
 
@@ -400,13 +560,27 @@ package-build validation.
 ```bash
 python -m crawlforge --help
 python -m crawlforge --version
+python -m crawlforge \
+  --urls https://example.com \
+  --max-pages 100 \
+  --max-depth 2 \
+  --output results.json \
+  --respect-robots \
+  --rate-limit 2
 ```
 
 The console-script entry point is also available after installation:
 
 ```bash
 crawlforge --help
+crawlforge --config examples/advanced_config.json
 ```
+
+The crawl command accepts `--urls`, `--max-pages`, `--max-depth`,
+`--max-concurrent`, `--output`, `--html-report`, `--config`,
+`--respect-robots`/`--no-respect-robots`, `--rate-limit`, `--log-file`, and
+`--log-level`. At least `--urls` or `--config` is required to start work.
+Without either, the command prints help and exits successfully.
 
 ## License
 

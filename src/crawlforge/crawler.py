@@ -30,6 +30,8 @@ from crawlforge.parser import HTMLParser, ParsedPage
 from crawlforge.politeness import RateLimiter, RobotsParser
 from crawlforge.queue import CrawlerQueue
 from crawlforge.retry import ErrorRecord, RetryStats, RetryStrategy
+from crawlforge.sitemap import SitemapParser
+from crawlforge.statistics import CrawlerStats, CrawlerStatsSnapshot
 from crawlforge.storage import DataStorage
 from crawlforge.urls import canonical_hostname
 
@@ -38,6 +40,8 @@ logger = logging.getLogger(__name__)
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
 _TRANSIENT_HTTP_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
 _MAX_REDIRECTS = 10
+_DEFAULT_SITEMAP_MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
+_RESPONSE_READ_CHUNK_BYTES = 64 * 1024
 
 
 class CrawlStats(TypedDict):
@@ -73,6 +77,7 @@ class _CrawlOutcome:
     depth: int
     page: ParsedPage | None
     error: str | None
+    status_code: int | None
 
 
 class _RequestPolicyError(PermanentError):
@@ -203,6 +208,9 @@ class AsyncCrawler:
         self._stored_count = 0
         self._storage_error_count = 0
         self._storage_retry_count = 0
+        self._crawl_active_tasks = 0
+        self._sitemap_max_document_bytes = _DEFAULT_SITEMAP_MAX_DOCUMENT_BYTES
+        self.stats = CrawlerStats()
 
         configured_agents = tuple(user_agents) if user_agents is not None else ()
         self._user_agents = configured_agents or (user_agent,)
@@ -220,6 +228,7 @@ class AsyncCrawler:
         self.queue = CrawlerQueue()
         self.visited_urls: set[str] = set()
         self.failed_urls: dict[str, str] = {}
+        self.sitemap_failures: dict[str, str] = {}
         self.processed_urls: dict[str, ParsedPage] = {}
         self._url_depths: dict[str, int] = {}
         self._discovered_urls: set[str] = set()
@@ -270,6 +279,7 @@ class AsyncCrawler:
         same_domain_only: bool = False,
         exclude_patterns: Sequence[str] | None = None,
         include_patterns: Sequence[str] | None = None,
+        sitemap_urls: Sequence[str] | None = None,
     ) -> dict[str, ParsedPage]:
         """Crawl reachable pages within depth, URL, and concurrency limits."""
         if max_pages <= 0:
@@ -277,15 +287,65 @@ class AsyncCrawler:
         if self._closed:
             raise RuntimeError("AsyncCrawler is closed")
 
-        normalized_starts = self._normalize_start_urls(start_urls)
+        normalized_starts = self._normalize_start_urls(start_urls) if start_urls else []
+        normalized_sitemaps = (
+            self._normalize_start_urls(
+                list(sitemap_urls),
+                label="sitemap URL",
+                collection_name="sitemap_urls",
+            )
+            if sitemap_urls
+            else []
+        )
+        if not normalized_starts and not normalized_sitemaps:
+            raise ValueError("start_urls or sitemap_urls must contain at least one URL")
         excludes = self._compile_patterns(exclude_patterns, "exclude_patterns")
         includes = self._compile_patterns(include_patterns, "include_patterns")
-        allowed_domains = {self._domain_key(url) for url in normalized_starts}
+        allowed_domains = {
+            self._domain_key(url) for url in (*normalized_starts, *normalized_sitemaps)
+        }
 
         async with self._crawl_lock:
-            self._reset_crawl_state()
+            self._reset_crawl_state(max_pages=max_pages)
             for url in normalized_starts:
                 self._enqueue(url, depth=0, priority=0)
+            if normalized_sitemaps:
+                async with SitemapParser(
+                    fetcher=self._fetch_sitemap_document,
+                    max_document_bytes=self._sitemap_max_document_bytes,
+                ) as sitemap_parser:
+                    for sitemap_url in normalized_sitemaps:
+                        try:
+                            sitemap_seeds = await sitemap_parser.fetch_sitemap(
+                                sitemap_url
+                            )
+                        except (RuntimeError, ValueError) as error:
+                            failure = f"{type(error).__name__}: {error}"
+                            self.sitemap_failures[sitemap_url] = failure
+                            logger.warning(
+                                "Could not use sitemap %s: %s",
+                                sitemap_url,
+                                failure,
+                            )
+                            continue
+                        normalized_sitemap_seeds = (
+                            self._normalize_start_urls(sitemap_seeds)
+                            if sitemap_seeds
+                            else []
+                        )
+                        for url in normalized_sitemap_seeds:
+                            if self._should_enqueue(
+                                url,
+                                allowed_domains=allowed_domains,
+                                same_domain_only=same_domain_only,
+                                excludes=excludes,
+                                includes=includes,
+                            ):
+                                self._enqueue(url, depth=0, priority=0)
+            if not self._discovered_urls:
+                self.stats.finish()
+                self._log_progress()
+                raise ValueError("no crawlable URLs were found in configured sitemaps")
 
             await self._crawl_queued_urls(
                 max_pages=max_pages,
@@ -294,6 +354,8 @@ class AsyncCrawler:
                 excludes=excludes,
                 includes=includes,
             )
+            self.stats.finish()
+            self._log_progress()
 
             return dict(self.processed_urls)
 
@@ -337,9 +399,19 @@ class AsyncCrawler:
         """Return classified error and retry statistics."""
         return self.retry_strategy.get_stats()
 
+    def get_advanced_stats(self) -> CrawlerStatsSnapshot:
+        """Return status, domain, runtime, speed, and ETA statistics."""
+        queue_stats = self.queue.get_stats()
+        return self.stats.get_stats(
+            active_tasks=self._crawl_active_tasks,
+            queued_pages=queue_stats["queued"],
+        )
+
     async def _fetch_url_with_error(
         self,
         url: str,
+        *,
+        max_response_bytes: int | None = None,
     ) -> _FetchOutcome:
         logger.info("Fetching URL: %s", url)
         user_agent = self._next_user_agent()
@@ -354,6 +426,7 @@ class AsyncCrawler:
                 self._fetch_attempt,
                 url,
                 user_agent,
+                max_response_bytes,
             )
         except _RobotsBlocked as error:
             logger.warning("Blocked by robots.txt: %s", error)
@@ -403,9 +476,17 @@ class AsyncCrawler:
         self,
         url: str,
         user_agent: str,
+        max_response_bytes: int | None = None,
     ) -> tuple[str, str, int, str]:
         try:
-            result = await self._fetch_redirect_chain(url, user_agent)
+            if max_response_bytes is None:
+                result = await self._fetch_redirect_chain(url, user_agent)
+            else:
+                result = await self._fetch_redirect_chain(
+                    url,
+                    user_agent,
+                    max_response_bytes,
+                )
             if len(result) == 3:
                 content, final_url, status = result
                 return content, final_url, status, ""
@@ -434,6 +515,7 @@ class AsyncCrawler:
         self,
         url: str,
         user_agent: str,
+        max_response_bytes: int | None = None,
     ) -> tuple[str, str, int] | tuple[str, str, int, str]:
         current_url = url
         for redirect_count in range(_MAX_REDIRECTS + 1):
@@ -464,13 +546,50 @@ class AsyncCrawler:
                         continue
                     response.raise_for_status()
                     return (
-                        await response.text(),
+                        await self._read_response_text(
+                            response,
+                            max_response_bytes=max_response_bytes,
+                        ),
                         str(response.url),
                         response.status,
                         response.content_type,
                     )
 
         raise AssertionError("redirect loop exhausted without a request outcome")
+
+    async def _fetch_sitemap_document(self, sitemap_url: str) -> str:
+        outcome = self._coerce_fetch_outcome(
+            await self._fetch_url_with_error(
+                sitemap_url,
+                max_response_bytes=self._sitemap_max_document_bytes,
+            )
+        )
+        if outcome.error is not None:
+            raise RuntimeError(outcome.error)
+        return outcome.content
+
+    async def _read_response_text(
+        self,
+        response: aiohttp.ClientResponse,
+        *,
+        max_response_bytes: int | None,
+    ) -> str:
+        if max_response_bytes is None:
+            return await response.text()
+        if (
+            response.content_length is not None
+            and response.content_length > max_response_bytes
+        ):
+            raise _RequestPolicyError(f"response exceeds {max_response_bytes} bytes")
+
+        body = bytearray()
+        async for chunk in response.content.iter_chunked(_RESPONSE_READ_CHUNK_BYTES):
+            body.extend(chunk)
+            if len(body) > max_response_bytes:
+                raise _RequestPolicyError(
+                    f"response exceeds {max_response_bytes} bytes"
+                )
+        return bytes(body).decode(response.charset or "utf-8")
 
     async def _request_minimum_interval(
         self,
@@ -684,10 +803,11 @@ class AsyncCrawler:
         if session.closed:
             self._session = None
 
-    def _reset_crawl_state(self) -> None:
+    def _reset_crawl_state(self, *, max_pages: int) -> None:
         self.queue = CrawlerQueue()
         self.visited_urls.clear()
         self.failed_urls.clear()
+        self.sitemap_failures.clear()
         self.processed_urls.clear()
         self._url_depths.clear()
         self._discovered_urls.clear()
@@ -700,7 +820,9 @@ class AsyncCrawler:
         self._stored_count = 0
         self._storage_error_count = 0
         self._storage_retry_count = 0
+        self._crawl_active_tasks = 0
         self.retry_strategy.reset_stats()
+        self.stats.reset(target_pages=max_pages)
 
     def _enqueue(self, url: str, *, depth: int, priority: int) -> None:
         if url in self._discovered_urls:
@@ -762,6 +884,7 @@ class AsyncCrawler:
                     task = asyncio.create_task(self._crawl_page(url, depth))
                     tasks[task] = target
                     active_by_domain[domain] = active_by_domain.get(domain, 0) + 1
+                    self._crawl_active_tasks = len(tasks)
 
                 if not tasks:
                     break
@@ -786,6 +909,7 @@ class AsyncCrawler:
                         active_by_domain[domain] = remaining
                     else:
                         del active_by_domain[domain]
+                    self._crawl_active_tasks = len(tasks)
                     self._log_progress()
         except BaseException as error:
             for task in tasks:
@@ -796,13 +920,23 @@ class AsyncCrawler:
                 if url not in self.processed_urls and url not in self.failed_urls:
                     self.failed_urls[url] = failure
                     self.queue.mark_failed(url, failure)
+                    self.stats.record_page(
+                        url,
+                        successful=False,
+                        status_code=None,
+                    )
+            self._crawl_active_tasks = 0
             raise
+        finally:
+            self._crawl_active_tasks = 0
 
     async def _crawl_page(self, url: str, depth: int) -> _CrawlOutcome:
+        status_code: int | None = None
         try:
             fetch = self._coerce_fetch_outcome(await self._fetch_url_with_error(url))
+            status_code = fetch.status_code
             if fetch.error is not None:
-                return _CrawlOutcome(url, depth, None, fetch.error)
+                return _CrawlOutcome(url, depth, None, fetch.error, status_code)
             page = await self._parser.parse_html(fetch.content, fetch.final_url)
             page["url"] = url
             assert fetch.status_code is not None
@@ -818,7 +952,7 @@ class AsyncCrawler:
                     "content_type": fetch.content_type,
                 }
             )
-            return _CrawlOutcome(url, depth, page, None)
+            return _CrawlOutcome(url, depth, page, None, status_code)
         except Exception as error:
             parse_error = ParseError(
                 f"{type(error).__name__}: {error}",
@@ -836,6 +970,7 @@ class AsyncCrawler:
                 depth,
                 None,
                 f"{type(error).__name__}: {error}",
+                status_code,
             )
 
     async def _save_page(self, data: dict[str, object]) -> None:
@@ -899,6 +1034,12 @@ class AsyncCrawler:
         excludes: tuple[re.Pattern[str], ...],
         includes: tuple[re.Pattern[str], ...],
     ) -> None:
+        successful = outcome.error is None and outcome.page is not None
+        self.stats.record_page(
+            outcome.url,
+            successful=successful,
+            status_code=outcome.status_code,
+        )
         if outcome.error is not None or outcome.page is None:
             error = outcome.error or "Unknown crawl failure"
             self.failed_urls[outcome.url] = error
@@ -941,7 +1082,13 @@ class AsyncCrawler:
             return False
         return not includes or any(pattern.search(url) for pattern in includes)
 
-    def _normalize_start_urls(self, start_urls: list[str]) -> list[str]:
+    def _normalize_start_urls(
+        self,
+        start_urls: list[str],
+        *,
+        label: str = "start URL",
+        collection_name: str = "start_urls",
+    ) -> list[str]:
         normalized: list[str] = []
         seen: set[str] = set()
         for url in start_urls:
@@ -958,12 +1105,12 @@ class AsyncCrawler:
             except ValueError:
                 valid = False
             if not valid:
-                raise ValueError(f"invalid start URL: {url!r}")
+                raise ValueError(f"invalid {label}: {url!r}")
             if candidate not in seen:
                 seen.add(candidate)
                 normalized.append(candidate)
         if not normalized:
-            raise ValueError("start_urls must contain at least one URL")
+            raise ValueError(f"{collection_name} must contain at least one URL")
         return normalized
 
     def _compile_patterns(
@@ -981,10 +1128,17 @@ class AsyncCrawler:
 
     def _log_progress(self) -> None:
         stats = self.get_stats()
+        advanced = self.get_advanced_stats()
+        eta = advanced["estimated_remaining_seconds"]
+        eta_text = f"{eta:.1f}s" if eta is not None else "unknown"
         logger.info(
-            "Crawl progress: processed=%d queued=%d errors=%d rate=%.2f pages/s",
+            "Crawl progress: processed=%d queued=%d errors=%d rate=%.2f pages/s "
+            "progress=%.1f%% eta=%s active=%d",
             stats["processed"],
             stats["queued"],
             stats["failed"],
             stats["pages_per_second"],
+            advanced["progress_percent"],
+            eta_text,
+            advanced["active_tasks"],
         )

@@ -94,6 +94,87 @@ async def test_crawl_applies_domain_include_and_exclude_filters() -> None:
 
 
 @pytest.mark.asyncio
+async def test_crawl_uses_sitemap_as_the_only_url_source() -> None:
+    """Sitemap entries enter the normal queue without an explicit page seed."""
+    page_hits = 0
+
+    async def sitemap(request: web.Request) -> web.Response:
+        origin = f"{request.scheme}://{request.host}"
+        return web.Response(
+            text=(
+                "<urlset>"
+                f"<url><loc>{origin}/page#one</loc></url>"
+                f"<url><loc>{origin}/page#two</loc></url>"
+                f"<url><loc>{origin}/excluded</loc></url>"
+                "</urlset>"
+            ),
+            content_type="application/xml",
+        )
+
+    async def page(_request: web.Request) -> web.Response:
+        nonlocal page_hits
+        page_hits += 1
+        return web.Response(text="<title>Sitemap page</title>")
+
+    async def excluded(_request: web.Request) -> web.Response:
+        raise AssertionError("excluded sitemap location was fetched")
+
+    app = web.Application()
+    app.router.add_get("/sitemap.xml", sitemap)
+    app.router.add_get("/page", page)
+    app.router.add_get("/excluded", excluded)
+
+    async with (
+        serve(app) as server,
+        AsyncCrawler(
+            respect_robots=False,
+            requests_per_second=1000,
+        ) as crawler,
+    ):
+        root = str(server.make_url("/"))
+        pages = await crawler.crawl(
+            [],
+            sitemap_urls=[f"{root}sitemap.xml"],
+            exclude_patterns=["/excluded"],
+        )
+
+    assert set(pages) == {f"{root}page"}
+    assert page_hits == 1
+    assert crawler.get_advanced_stats()["status_codes"] == {"200": 1}
+
+
+@pytest.mark.asyncio
+async def test_integrated_sitemap_fetch_rejects_oversized_chunked_body() -> None:
+    """The shared polite transport bounds a sitemap before materializing its body."""
+
+    async def oversized(request: web.Request) -> web.StreamResponse:
+        response = web.StreamResponse(
+            headers={"Content-Type": "application/xml"},
+        )
+        await response.prepare(request)
+        await response.write(b"<urlset>" + b"x" * 128 + b"</urlset>")
+        await response.write_eof()
+        return response
+
+    app = web.Application()
+    app.router.add_get("/sitemap.xml", oversized)
+
+    async with (
+        serve(app) as server,
+        AsyncCrawler(
+            respect_robots=False,
+            requests_per_second=1000,
+        ) as crawler,
+    ):
+        crawler._sitemap_max_document_bytes = 32
+        sitemap_url = str(server.make_url("/sitemap.xml"))
+        with pytest.raises(ValueError, match="no crawlable URLs"):
+            await crawler.crawl([], sitemap_urls=[sitemap_url])
+
+    assert "response exceeds 32 bytes" in crawler.sitemap_failures[sitemap_url]
+
+
+@pytest.mark.asyncio
 async def test_crawl_records_failures_and_live_progress(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -119,7 +200,14 @@ async def test_crawl_records_failures_and_live_progress(
     assert crawler.get_stats()["processed"] == 1
     assert crawler.get_stats()["failed"] == 1
     assert crawler.get_stats()["pages_per_second"] > 0
+    advanced = crawler.get_advanced_stats()
+    assert advanced["total_pages"] == 2
+    assert advanced["successful"] == 1
+    assert advanced["failed"] == 1
+    assert advanced["status_codes"] == {"200": 1, "404": 1}
+    assert advanced["progress_percent"] == 100.0
     assert "Crawl progress: processed=1 queued=0 errors=1 rate=" in caplog.text
+    assert "progress=100.0% eta=unknown active=0" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -388,6 +476,44 @@ async def test_scheduler_refills_capacity_before_slow_request_finishes(
     release_slow.set()
     results = await asyncio.wait_for(task, timeout=5)
     assert set(results) == {slow_url, fast_url, third_url}
+    await crawler.close()
+
+
+@pytest.mark.asyncio
+async def test_live_progress_reports_remaining_active_page_tasks(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Progress emitted after a fast page observes its still-running sibling."""
+    crawler = AsyncCrawler(max_concurrent=2)
+    slow_started = asyncio.Event()
+    release_slow = asyncio.Event()
+    progress_observed = asyncio.Event()
+    slow_url = "https://slow.example/"
+    fast_url = "https://fast.example/"
+
+    async def fake_fetch(url: str) -> tuple[str, str | None, str]:
+        if url == slow_url:
+            slow_started.set()
+            await release_slow.wait()
+        return "<p>ok</p>", None, url
+
+    original_log_progress = crawler._log_progress
+
+    def observe_progress() -> None:
+        original_log_progress()
+        if crawler.get_advanced_stats()["active_tasks"] == 1:
+            progress_observed.set()
+
+    monkeypatch.setattr(crawler, "_fetch_url_with_error", fake_fetch)
+    monkeypatch.setattr(crawler, "_log_progress", observe_progress)
+    with caplog.at_level(logging.INFO, logger="crawlforge.crawler"):
+        task = asyncio.create_task(crawler.crawl([slow_url, fast_url]))
+        await asyncio.wait_for(slow_started.wait(), timeout=5)
+        await asyncio.wait_for(progress_observed.wait(), timeout=5)
+        assert "active=1" in caplog.text
+        release_slow.set()
+        await asyncio.wait_for(task, timeout=5)
     await crawler.close()
 
 
