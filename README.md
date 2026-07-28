@@ -14,7 +14,8 @@ version output. Crawls support depth and page limits, URL filters, duplicate
 suppression, global and per-domain concurrency, live progress logging, and
 structured success and failure state. Requests support per-domain or global
 rate limiting, robots.txt enforcement, configurable delays, User-Agent
-rotation, and bounded retries with exponential backoff.
+rotation, classified failures, configurable retries with exponential backoff,
+and retry statistics.
 
 ## Queue-driven website crawling
 
@@ -84,8 +85,10 @@ python examples/crawl_site.py https://example.com \
 `AsyncCrawler` checks robots.txt before each requested URL and each redirect
 destination. Rules are cached by origin for the crawler lifetime. A missing
 robots.txt file permits crawling; authorization failures, server errors, and
-network failures fail closed. Blocked URLs are logged, returned as empty strings
-by `fetch_url()`, and recorded in `failed_urls` during a crawl.
+network failures fail closed. Temporary robots.txt server, timeout, and network
+failures use the configured retry strategy before the denial is cached. Blocked
+URLs are logged, returned as empty strings by `fetch_url()`, and recorded in
+`failed_urls` during a crawl.
 
 ```python
 crawler = AsyncCrawler(
@@ -104,11 +107,12 @@ interval is the greatest of the configured rate interval, `min_delay`, and the
 matching robots.txt `Crawl-delay`, plus a random value from zero through
 `jitter`.
 
-Temporary network failures and HTTP 429, 500, 502, 503, and 504 responses are
-retried up to `max_retries`. Backoff starts at `backoff_base`, doubles after
-each failed attempt, and is capped by `backoff_max`. A valid `Retry-After`
-header extends that wait when required. Concurrency permits and response
-resources are released before the backoff wait.
+Temporary network failures and HTTP 408, 429, 500, 502, 503, and 504 responses
+are retried up to `max_retries`. Backoff starts at `backoff_base`, doubles after
+each failed attempt, and is capped by `backoff_max`. HTTP 500 is limited to one
+retry, while 429 uses a larger backoff and honors a valid `Retry-After` value as
+a lower bound. Concurrency permits and response resources are released before
+the backoff wait.
 
 Pass `user_agents` to rotate a sequence in round-robin order. One User-Agent is
 selected for the complete logical request, including redirect checks and
@@ -124,6 +128,64 @@ internet:
 
 ```bash
 python examples/polite_crawl.py
+```
+
+## Error handling and retries
+
+`RetryStrategy` runs any asynchronous callable with bounded retries. By
+default, it retries `TransientError` and `NetworkError`; `PermanentError` and
+`ParseError` fail immediately. Per-type retry limits and backoff factors can be
+configured independently:
+
+```python
+from crawlforge import (
+    NetworkError,
+    RetryStrategy,
+    TransientError,
+)
+
+retry_strategy = RetryStrategy(
+    max_retries=3,
+    backoff_factor=1.0,
+    retry_on=[TransientError, NetworkError],
+    retry_limits={TransientError: 3, NetworkError: 2},
+    backoff_factors={TransientError: 1.0, NetworkError: 0.5},
+)
+```
+
+Pass the strategy to `AsyncCrawler(retry_strategy=retry_strategy)` to replace
+the compatibility settings `max_retries`, `backoff_base`, and `backoff_max`.
+Each failed attempt is stored in `error_history` with its type, URL, HTTP
+status, attempt number, retry decision, and next delay. `get_error_stats()`
+returns error totals by type, total and successful retries, average scheduled
+retry delay, and URLs with permanent errors. The same snapshot is available as
+`get_stats()["errors"]`.
+
+HTTP 401, 403, and 404 responses are classified as permanent. HTTP 429, 500,
+502, 503, and 504 responses are transient. Timeouts are transient failures,
+connection and DNS failures are network errors, and decoding or parsing
+failures are parse errors. Task cancellation always propagates.
+
+Connection, socket-read, and total timeouts can be configured independently:
+
+```python
+crawler = AsyncCrawler(
+    connect_timeout=5.0,
+    read_timeout=20.0,
+    total_timeout=30.0,
+    timeout_backoff_factor=1.5,
+)
+```
+
+The timeout budget is multiplied by `timeout_backoff_factor` on every retry.
+The initial attempt uses the configured values unchanged.
+
+The error demonstration starts a local server with 429, 404, 500, and 503
+responses, shows automatic recovery, prints retry statistics, and
+asynchronously saves a JSON report:
+
+```bash
+python examples/error_retries.py --output error-report.json
 ```
 
 ## Asynchronous HTTP client
@@ -152,8 +214,8 @@ asyncio.run(main())
 
 `AsyncCrawler` creates its `aiohttp.ClientSession` lazily and reuses it across
 requests. `max_concurrent` limits both active downloads and the connector pool.
-Connection and socket-read timeouts can be configured with `connect_timeout`
-and `read_timeout`.
+Connection, socket-read, and total timeouts can be configured with
+`connect_timeout`, `read_timeout`, and `total_timeout`.
 
 HTTP errors, timeouts, and other `aiohttp` client errors are logged and produce
 an empty string for the affected URL, allowing the remaining batch to finish.

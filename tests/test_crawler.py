@@ -226,7 +226,7 @@ async def test_fetch_urls_isolates_http_errors(
 
 
 @pytest.mark.asyncio
-async def test_invalid_url_is_handled_as_client_error(
+async def test_invalid_url_is_handled_as_permanent_error(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A malformed URL produces an empty result instead of escaping the client."""
@@ -235,7 +235,8 @@ async def test_invalid_url_is_handled_as_client_error(
             result = await crawler.fetch_url("://invalid")
 
     assert result == ""
-    assert "Network error for ://invalid" in caplog.text
+    assert "Permanent error for ://invalid" in caplog.text
+    assert crawler.get_error_stats()["errors_by_type"] == {"PermanentError": 1}
 
 
 @pytest.mark.asyncio
