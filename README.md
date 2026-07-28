@@ -15,7 +15,7 @@ suppression, global and per-domain concurrency, live progress logging, and
 structured success and failure state. Requests support per-domain or global
 rate limiting, robots.txt enforcement, configurable delays, User-Agent
 rotation, classified failures, configurable retries with exponential backoff,
-and retry statistics.
+retry statistics, and asynchronous JSON, CSV, or SQLite persistence.
 
 ## Queue-driven website crawling
 
@@ -278,10 +278,81 @@ python examples/parse_pages.py
 The examples access public websites and are intended for manual use. Automated
 tests run only against ephemeral local HTTP servers and in-memory HTML fixtures.
 
+## Asynchronous data storage
+
+Pass a storage backend to `AsyncCrawler` to persist every successfully crawled
+page as soon as parsing finishes:
+
+```python
+import asyncio
+
+from crawlforge import AsyncCrawler, JSONStorage, SQLiteStorage
+
+
+async def main() -> None:
+    json_storage = JSONStorage("results.jsonl")
+    async with AsyncCrawler(storage=json_storage) as crawler:
+        await crawler.crawl(["https://example.com"])
+
+    database = SQLiteStorage("crawler.db", batch_size=100)
+    crawler = AsyncCrawler(storage=database)
+    try:
+        await crawler.crawl(["https://example.com"])
+    finally:
+        await crawler.close()
+
+
+asyncio.run(main())
+```
+
+`JSONStorage` writes one complete object per line by default, allowing large
+outputs to be processed incrementally. Set `json_lines=False, indent=2` for a
+formatted JSON array. `CSVStorage` determines its columns from the standardized
+record, quotes delimiters and line breaks with Python's CSV rules, accepts a
+custom text encoding, and JSON-encodes nested links and metadata.
+
+`SQLiteStorage` creates a `pages` table lazily, indexes URL and crawl timestamp
+columns, and uses configurable `executemany()` batches. A stable hash of the
+complete record deduplicates uncertain retries while retaining later crawls of
+the same URL as separate rows. A short final batch is committed by `close()`.
+The common `DataStorage` interface can be implemented for additional
+destinations with asynchronous `save()` and `close()` methods.
+
+Every stored record contains:
+
+- `url`, `title`, `text`, and `links`;
+- `metadata`;
+- timezone-aware `crawled_at`;
+- the final HTTP `status_code` and normalized `content_type`.
+
+File writes are serialized per backend, and SQLite batches are protected from
+concurrent mutation. Storage cancellation propagates normally. Other write
+errors use bounded exponential-backoff retries, are logged after the last
+attempt, and do not turn an otherwise successful page into a crawl failure.
+`get_stats()` reports `stored`, `storage_retries`, and `storage_errors`.
+`AsyncCrawler.close()` flushes and closes the configured storage along with the
+HTTP session. An exhausted storage close error propagates after the HTTP session
+has been released so an uncommitted final batch cannot be mistaken for success.
+Direct `fetch_url()` and `fetch_and_parse()` calls do not persist data
+automatically.
+
+Retries have at-least-once semantics for custom storage implementations. A
+backend that completes a side effect and then reports an error must deduplicate
+the repeated `save()` call when duplicate output is unacceptable. The built-in
+SQLite backend handles this with record-level idempotency keys.
+
+The self-contained demonstration crawls a local two-page site three times,
+writes each supported format, reads the records back, and prints saved counts
+and titles. Use an empty output directory; the script refuses to overwrite its
+three generated data files:
+
+```bash
+python examples/storage_crawl.py --output-dir storage-output
+```
+
 ## Planned capabilities
 
 - Sitemap discovery
-- Pluggable storage and crawl reports
 - Configuration files and an extensible CLI
 
 ## Requirements
@@ -317,7 +388,7 @@ ruff format --check .
 Run static type checking:
 
 ```bash
-mypy
+mypy src
 ```
 
 GitHub Actions runs the full test suite on Python 3.12, 3.13, and 3.14. Pull

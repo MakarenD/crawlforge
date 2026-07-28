@@ -42,3 +42,5 @@ results/
 crawl-output/
 downloads/
 error-report.json
+crawl-output.json
+storage-output/

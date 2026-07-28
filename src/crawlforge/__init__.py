@@ -7,15 +7,26 @@ from crawlforge.parser import HTMLParser, ParsedPage
 from crawlforge.politeness import RateLimiter, RobotsData, RobotsParser
 from crawlforge.queue import CrawlerQueue, QueueStats
 from crawlforge.retry import ErrorRecord, RetryStats, RetryStrategy
+from crawlforge.storage import (
+    CrawlData,
+    CSVStorage,
+    DataStorage,
+    JSONStorage,
+    SQLiteStorage,
+)
 
 __version__ = "0.1.0"
 
 __all__ = [
     "AsyncCrawler",
+    "CSVStorage",
     "CrawlerQueue",
+    "CrawlData",
     "CrawlStats",
+    "DataStorage",
     "ErrorRecord",
     "HTMLParser",
+    "JSONStorage",
     "NetworkError",
     "ParseError",
     "ParsedPage",
@@ -28,6 +39,7 @@ __all__ = [
     "RobotsParser",
     "SemaphoreManager",
     "SemaphoreStats",
+    "SQLiteStorage",
     "TransientError",
     "__version__",
 ]
