@@ -2,8 +2,11 @@
 
 from crawlforge import (
     CrawlerQueue,
+    CSVStorage,
+    DataStorage,
     ErrorRecord,
     HTMLParser,
+    JSONStorage,
     NetworkError,
     ParseError,
     PermanentError,
@@ -11,6 +14,7 @@ from crawlforge import (
     RetryStrategy,
     RobotsParser,
     SemaphoreManager,
+    SQLiteStorage,
     TransientError,
     __version__,
 )
@@ -42,3 +46,11 @@ def test_retry_and_error_types_are_exposed() -> None:
     assert PermanentError.__name__ == "PermanentError"
     assert NetworkError.__name__ == "NetworkError"
     assert ParseError.__name__ == "ParseError"
+
+
+def test_storage_types_are_exposed() -> None:
+    """The package root exposes every asynchronous storage backend."""
+    assert DataStorage.__name__ == "DataStorage"
+    assert JSONStorage.__name__ == "JSONStorage"
+    assert CSVStorage.__name__ == "CSVStorage"
+    assert SQLiteStorage.__name__ == "SQLiteStorage"
