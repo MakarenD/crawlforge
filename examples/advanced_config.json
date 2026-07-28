@@ -1,0 +1,36 @@
+{
+  "urls": [
+    "https://example.com/"
+  ],
+  "sitemaps": [
+    "https://example.com/sitemap.xml"
+  ],
+  "crawler": {
+    "max_pages": 100,
+    "max_depth": 2,
+    "max_concurrent": 10,
+    "max_concurrent_per_domain": 2,
+    "rate_limit": 2.0,
+    "respect_robots": true
+  },
+  "filters": {
+    "same_domain_only": true,
+    "exclude": [
+      "/private/"
+    ]
+  },
+  "storage": {
+    "format": "json",
+    "path": "advanced-pages.jsonl"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "crawlforge.log",
+    "max_bytes": 5000000,
+    "backup_count": 3
+  },
+  "reports": {
+    "json": "advanced-results.json",
+    "html": "advanced-report.html"
+  }
+}

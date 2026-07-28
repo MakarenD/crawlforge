@@ -1,7 +1,10 @@
 """Tests for package metadata and public exports."""
 
 from crawlforge import (
+    AdvancedCrawler,
+    CrawlerConfig,
     CrawlerQueue,
+    CrawlerStats,
     CSVStorage,
     DataStorage,
     ErrorRecord,
@@ -14,6 +17,7 @@ from crawlforge import (
     RetryStrategy,
     RobotsParser,
     SemaphoreManager,
+    SitemapParser,
     SQLiteStorage,
     TransientError,
     __version__,
@@ -54,3 +58,11 @@ def test_storage_types_are_exposed() -> None:
     assert JSONStorage.__name__ == "JSONStorage"
     assert CSVStorage.__name__ == "CSVStorage"
     assert SQLiteStorage.__name__ == "SQLiteStorage"
+
+
+def test_advanced_crawler_types_are_exposed() -> None:
+    """The package root exposes configuration, sitemap, stats, and integration."""
+    assert AdvancedCrawler.__name__ == "AdvancedCrawler"
+    assert CrawlerConfig.__name__ == "CrawlerConfig"
+    assert CrawlerStats.__name__ == "CrawlerStats"
+    assert SitemapParser.__name__ == "SitemapParser"
