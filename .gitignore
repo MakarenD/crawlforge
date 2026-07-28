@@ -41,3 +41,4 @@ data/
 results/
 crawl-output/
 downloads/
+error-report.json

@@ -13,6 +13,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 import aiohttp
 
+from crawlforge.errors import NetworkError, PermanentError, TransientError
 from crawlforge.urls import canonical_hostname
 
 _sleep = asyncio.sleep
@@ -157,7 +158,13 @@ class RobotsParser:
             groups: tuple[_RobotsGroup, ...]
             try:
                 status, content = await self._fetcher(robots_url)
-            except (TimeoutError, aiohttp.ClientError):
+            except (
+                TimeoutError,
+                aiohttp.ClientError,
+                TransientError,
+                NetworkError,
+                PermanentError,
+            ):
                 status = None
                 groups = (self._deny_all_group(),)
             else:

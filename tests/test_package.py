@@ -2,10 +2,16 @@
 
 from crawlforge import (
     CrawlerQueue,
+    ErrorRecord,
     HTMLParser,
+    NetworkError,
+    ParseError,
+    PermanentError,
     RateLimiter,
+    RetryStrategy,
     RobotsParser,
     SemaphoreManager,
+    TransientError,
     __version__,
 )
 
@@ -26,3 +32,13 @@ def test_crawl_control_types_are_exposed() -> None:
     assert SemaphoreManager.__name__ == "SemaphoreManager"
     assert RateLimiter.__name__ == "RateLimiter"
     assert RobotsParser.__name__ == "RobotsParser"
+
+
+def test_retry_and_error_types_are_exposed() -> None:
+    """The package root exposes retry orchestration and error classification."""
+    assert RetryStrategy.__name__ == "RetryStrategy"
+    assert ErrorRecord.__name__ == "ErrorRecord"
+    assert TransientError.__name__ == "TransientError"
+    assert PermanentError.__name__ == "PermanentError"
+    assert NetworkError.__name__ == "NetworkError"
+    assert ParseError.__name__ == "ParseError"

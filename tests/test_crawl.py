@@ -175,6 +175,7 @@ async def test_crawl_isolates_decode_and_parser_failures(
     assert set(results) == {ok}
     assert crawler.failed_urls[decode_error].startswith("UnicodeDecodeError:")
     assert crawler.failed_urls[parser_error] == "RuntimeError: parser failed"
+    assert crawler.get_error_stats()["errors_by_type"] == {"ParseError": 2}
     assert crawler.queue.get_stats()["active"] == 0
 
 
