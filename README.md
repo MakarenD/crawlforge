@@ -12,7 +12,9 @@ CrawlForge provides queue-driven website crawling, an importable asynchronous
 HTTP client, structured HTML parsing, and a command-line interface with help and
 version output. Crawls support depth and page limits, URL filters, duplicate
 suppression, global and per-domain concurrency, live progress logging, and
-structured success and failure state.
+structured success and failure state. Requests support per-domain or global
+rate limiting, robots.txt enforcement, configurable delays, User-Agent
+rotation, and bounded retries with exponential backoff.
 
 ## Queue-driven website crawling
 
@@ -64,7 +66,7 @@ The crawler exposes:
 - `processed_urls`, mapping successful URLs to structured `ParsedPage` data;
 - `failed_urls`, mapping failed URLs to error descriptions;
 - `get_stats()`, reporting processed, queued, active, failed, visited, and
-  pages-per-second values.
+  page and request throughput, average request delay, and robots.txt blocks.
 
 Progress is logged after every completed page at `INFO` level. The complete
 demonstration accepts one or more starting URLs, shows live progress, and saves
@@ -75,6 +77,53 @@ python examples/crawl_site.py https://example.com \
   --max-depth 2 \
   --max-pages 50 \
   --output crawl-output.json
+```
+
+## Polite request controls
+
+`AsyncCrawler` checks robots.txt before each requested URL and each redirect
+destination. Rules are cached by origin for the crawler lifetime. A missing
+robots.txt file permits crawling; authorization failures, server errors, and
+network failures fail closed. Blocked URLs are logged, returned as empty strings
+by `fetch_url()`, and recorded in `failed_urls` during a crawl.
+
+```python
+crawler = AsyncCrawler(
+    max_concurrent=5,
+    requests_per_second=2.0,
+    respect_robots=True,
+    min_delay=0.5,
+    jitter=0.2,
+    user_agent="MyBot/1.0",
+)
+```
+
+The default request limit is one request per second per domain. Set
+`rate_limit_per_domain=False` to share one global schedule. The effective
+interval is the greatest of the configured rate interval, `min_delay`, and the
+matching robots.txt `Crawl-delay`, plus a random value from zero through
+`jitter`.
+
+Temporary network failures and HTTP 429, 500, 502, 503, and 504 responses are
+retried up to `max_retries`. Backoff starts at `backoff_base`, doubles after
+each failed attempt, and is capped by `backoff_max`. A valid `Retry-After`
+header extends that wait when required. Concurrency permits and response
+resources are released before the backoff wait.
+
+Pass `user_agents` to rotate a sequence in round-robin order. One User-Agent is
+selected for the complete logical request, including redirect checks and
+retries, so robots.txt evaluation and request headers remain consistent.
+
+`RateLimiter` and `RobotsParser` are also public for applications that need the
+politeness controls independently. `get_stats()` exposes measured
+`requests_per_second`, `average_request_delay`, and `robots_blocked` values.
+
+The self-contained demonstration starts a local site, obeys its crawl delay,
+and shows a disallowed URL being blocked without depending on the public
+internet:
+
+```bash
+python examples/polite_crawl.py
 ```
 
 ## Asynchronous HTTP client
@@ -169,7 +218,7 @@ tests run only against ephemeral local HTTP servers and in-memory HTML fixtures.
 
 ## Planned capabilities
 
-- `robots.txt` support, retries, and sitemap discovery
+- Sitemap discovery
 - Pluggable storage and crawl reports
 - Configuration files and an extensible CLI
 
