@@ -1,6 +1,13 @@
 """Tests for package metadata and public exports."""
 
-from crawlforge import CrawlerQueue, HTMLParser, SemaphoreManager, __version__
+from crawlforge import (
+    CrawlerQueue,
+    HTMLParser,
+    RateLimiter,
+    RobotsParser,
+    SemaphoreManager,
+    __version__,
+)
 
 
 def test_package_version_is_exposed() -> None:
@@ -17,3 +24,5 @@ def test_crawl_control_types_are_exposed() -> None:
     """The package root exposes queue and concurrency controls."""
     assert CrawlerQueue.__name__ == "CrawlerQueue"
     assert SemaphoreManager.__name__ == "SemaphoreManager"
+    assert RateLimiter.__name__ == "RateLimiter"
+    assert RobotsParser.__name__ == "RobotsParser"

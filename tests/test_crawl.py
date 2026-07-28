@@ -53,7 +53,7 @@ async def test_crawl_respects_depth_and_never_visits_duplicates() -> None:
 
     assert set(results) == {root, level_one}
     assert crawler.visited_urls == {root, level_one}
-    assert hits == {"/": 1, "/level-one": 1}
+    assert hits == {"/robots.txt": 1, "/": 1, "/level-one": 1}
     assert crawler.get_stats()["queued"] == 0
 
 
