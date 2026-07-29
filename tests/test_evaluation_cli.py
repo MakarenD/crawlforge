@@ -7,6 +7,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+from semantic_fakes import ConstantEmbeddingProvider
+
+import crawlforge.cli as cli
+from crawlforge.semantic_models import SemanticDependencyError
+
 ROOT = Path(__file__).parents[1]
 BENCHMARK = ROOT / "benchmarks" / "retrieval"
 
@@ -24,9 +30,120 @@ def test_evaluate_subcommands_preserve_legacy_help() -> None:
     assert "search" in root.stdout
     assert "evaluate" in root.stdout
     assert evaluate.returncode == run.returncode == validate.returncode == 0
-    assert "{run,validate}" in evaluate.stdout
+    assert "{run,compare,validate}" in evaluate.stdout
     assert "--limit-values" in run.stdout
     assert "--dataset" in validate.stdout
+
+
+def test_semantic_cli_defaults_are_explicit_opt_in() -> None:
+    """Existing search and evaluation defaults remain lexical."""
+    parser = cli.build_parser()
+
+    search = parser.parse_args(["search", "query"])
+    evaluation = parser.parse_args(["evaluate", "run"])
+
+    assert search.strategy == "bm25"
+    assert evaluation.strategy == "bm25"
+
+
+def test_missing_semantic_extra_has_actionable_cli_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An unavailable optional runtime exits cleanly without a traceback."""
+    database = tmp_path / "index.db"
+    database.touch()
+
+    def missing_provider(_arguments: object) -> ConstantEmbeddingProvider:
+        raise SemanticDependencyError(
+            "Semantic retrieval requires the 'semantic' extra:\n"
+            'pip install "crawlforge[semantic]"'
+        )
+
+    monkeypatch.setattr(cli, "_semantic_provider", missing_provider)
+
+    with pytest.raises(SystemExit) as error:
+        cli.main(["embed", "--database", str(database)])
+
+    captured = capsys.readouterr()
+    assert error.value.code == 2
+    assert "crawlforge[semantic]" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_semantic_evaluation_and_paired_comparison_use_public_pipeline(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Controlled vectors exercise semantic evaluation and paired reporting."""
+    providers: list[ConstantEmbeddingProvider] = []
+
+    def provider_factory(**_values: object) -> ConstantEmbeddingProvider:
+        provider = ConstantEmbeddingProvider()
+        providers.append(provider)
+        return provider
+
+    monkeypatch.setattr(cli, "_semantic_provider_from_values", provider_factory)
+    semantic_output = tmp_path / "semantic.json"
+    semantic_exit = cli.main(
+        [
+            "evaluate",
+            "run",
+            "--strategy",
+            "semantic",
+            "--database",
+            str(tmp_path / "semantic.db"),
+            "--output",
+            str(semantic_output),
+            "--query-id",
+            "q001",
+            "--repeat-latency",
+            "1",
+            "--dimension",
+            "3",
+            "--json",
+        ]
+    )
+    semantic_summary = json.loads(capsys.readouterr().out)
+    semantic_report = json.loads(semantic_output.read_text(encoding="utf-8"))
+
+    comparison_output = tmp_path / "comparison.json"
+    comparison_exit = cli.main(
+        [
+            "evaluate",
+            "compare",
+            "--database",
+            str(tmp_path / "comparison.db"),
+            "--output",
+            str(comparison_output),
+            "--format",
+            "json",
+            "--query-id",
+            "q001",
+            "--repeat-latency",
+            "1",
+            "--bootstrap-samples",
+            "10",
+            "--dimension",
+            "3",
+            "--json",
+        ]
+    )
+    comparison_summary = json.loads(capsys.readouterr().out)
+    comparison_report = json.loads(comparison_output.read_text(encoding="utf-8"))
+
+    assert semantic_exit == comparison_exit == 0
+    assert semantic_summary["strategy"] == "semantic-exact-cosine"
+    assert semantic_report["dataset_signature"]
+    assert semantic_report["retrieval_configuration"]["model_id"] == "test/constant"
+    assert comparison_summary["signature"] == semantic_report["dataset_signature"]
+    assert comparison_report["baseline_strategy"] == "bm25-fts5"
+    assert comparison_report["candidate_strategy"] == "semantic-exact-cosine"
+    assert len(comparison_report["query_comparisons"]) == 1
+    assert len(providers) == 2
+    assert all(provider.close_calls == 1 for provider in providers)
 
 
 def test_validate_outputs_machine_readable_dataset_summary() -> None:

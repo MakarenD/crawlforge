@@ -83,6 +83,7 @@ class EvaluationDataset:
     documents: tuple[EvaluationDocument, ...]
     queries: tuple[EvaluationQuery, ...]
     root: Path
+    signature: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,3 +230,4 @@ class EvaluationRun:
     worst_queries: tuple[str, ...]
     failures: tuple[str, ...]
     warnings: tuple[str, ...]
+    dataset_signature: str = ""

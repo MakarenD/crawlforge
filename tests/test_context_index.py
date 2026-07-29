@@ -98,6 +98,9 @@ async def _downgrade_schema_to_v1(path: Path) -> None:
     async with aiosqlite.connect(path) as connection:
         await connection.executescript(
             """
+            DROP TABLE embedding_sessions;
+            DROP TABLE chunk_embeddings;
+            DROP TABLE embedding_models;
             DROP TABLE chunk_provenance;
             DROP INDEX idx_documents_content_hash;
             CREATE INDEX idx_documents_content_hash
@@ -106,6 +109,19 @@ async def _downgrade_schema_to_v1(path: Path) -> None:
             CREATE INDEX idx_content_chunks_chunk_id
             ON content_chunks(chunk_id);
             UPDATE context_schema_version SET version = 1 WHERE singleton = 1;
+            """
+        )
+        await connection.commit()
+
+
+async def _downgrade_schema_to_v2(path: Path) -> None:
+    async with aiosqlite.connect(path) as connection:
+        await connection.executescript(
+            """
+            DROP TABLE embedding_sessions;
+            DROP TABLE chunk_embeddings;
+            DROP TABLE embedding_models;
+            UPDATE context_schema_version SET version = 2 WHERE singleton = 1;
             """
         )
         await connection.commit()
@@ -145,9 +161,12 @@ async def test_initialize_creates_versioned_normalized_schema_and_is_idempotent(
         "content_chunks",
         "chunk_provenance",
         "index_sessions",
+        "embedding_models",
+        "chunk_embeddings",
+        "embedding_sessions",
         "chunk_fts",
     } <= table_names
-    assert version == [(1, 2)]
+    assert version == [(1, 3)]
     assert any(str(row[2]) == "document_contents" for row in foreign_keys)
 
 
@@ -166,7 +185,7 @@ async def test_get_index_info_reports_empty_and_populated_bounded_summaries(
     populated = await index.get_index_info()
     await index.close()
 
-    assert empty.schema_version == 2
+    assert empty.schema_version == 3
     assert empty.document_count == 0
     assert empty.chunk_count == 0
     assert empty.last_indexed_at is None
@@ -217,7 +236,7 @@ async def test_initialize_migrates_v1_provenance_and_indexes_idempotently(
         chunk_index = await connection.execute_fetchall(
             "PRAGMA index_info(idx_content_chunks_chunk_id)"
         )
-    assert version == [(2,)]
+    assert version == [(3,)]
     assert provenance == [(1,)]
     assert [str(row[2]) for row in document_index] == [
         "content_hash",
@@ -229,6 +248,52 @@ async def test_initialize_migrates_v1_provenance_and_indexes_idempotently(
         "content_hash",
         "ordinal",
     ]
+
+
+@pytest.mark.asyncio
+async def test_initialize_migrates_v2_to_semantic_schema_idempotently(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "migrate-v2.sqlite3"
+    document = _document("semantic-migration")
+    initial = SQLiteContextIndex(output)
+    await initial.index_documents([(document, [_chunk(document, 0, document.text)])])
+    await initial.close()
+    await _downgrade_schema_to_v2(output)
+
+    migrated = SQLiteContextIndex(output)
+    await migrated.initialize()
+    await migrated.initialize()
+    hits = await migrated.search("AsyncCrawler")
+    await migrated.close()
+
+    async with aiosqlite.connect(output) as connection:
+        version = await connection.execute_fetchall(
+            "SELECT version FROM context_schema_version WHERE singleton = 1"
+        )
+        tables = await connection.execute_fetchall(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table' AND name LIKE '%embedding%'
+            ORDER BY name
+            """
+        )
+        foreign_keys = await connection.execute_fetchall(
+            "PRAGMA foreign_key_list(chunk_embeddings)"
+        )
+
+    assert version == [(3,)]
+    assert [str(row[0]) for row in tables] == [
+        "chunk_embeddings",
+        "embedding_models",
+        "embedding_sessions",
+    ]
+    assert {str(row[2]) for row in foreign_keys} == {
+        "chunks",
+        "embedding_models",
+    }
+    assert hits[0].source.document_id == document.id
 
 
 @pytest.mark.asyncio
