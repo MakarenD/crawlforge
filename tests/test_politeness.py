@@ -9,6 +9,7 @@ import pytest
 
 import crawlforge.politeness as politeness
 from crawlforge import RateLimiter, RobotsParser
+from crawlforge.errors import PermanentError, TransientError
 
 
 @dataclass
@@ -159,6 +160,32 @@ async def test_robots_parser_applies_specific_rules_delay_and_cache() -> None:
     assert parser.can_fetch("https://example.com/private", "ExampleBot/1.0")
     assert parser.get_crawl_delay("ExampleBot/1.0") == 0.5
     assert parser.get_crawl_delay_for("https://example.com/a", "*") == 0.25
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (PermanentError("response exceeds 256 bytes"), "response exceeds"),
+        (TransientError("request timed out"), "timed out"),
+    ],
+)
+async def test_robots_parser_preserves_fail_closed_transport_reason(
+    error: Exception,
+    expected: str,
+) -> None:
+    """Fail-closed robots policy retains a bounded diagnostic category."""
+
+    async def fetcher(_url: str) -> tuple[int, str]:
+        raise error
+
+    parser = RobotsParser(fetcher)
+    await parser.fetch_robots("https://example.com/docs")
+
+    failure = parser.get_fetch_failure_for("https://example.com/other")
+    assert failure is not None
+    assert expected in failure
+    assert not parser.can_fetch("https://example.com/docs")
 
 
 @pytest.mark.asyncio

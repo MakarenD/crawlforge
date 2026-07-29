@@ -2,9 +2,9 @@
 
 [![CI][ci-badge]][ci-workflow]
 
-CrawlForge is a high-performance asynchronous web crawler for Python. The
-project is being built as a composable foundation for reliable, polite, and
-observable web crawling.
+CrawlForge is a local HTTP-first web-context engine with BM25 retrieval and an
+MCP adapter for AI agents. Its asynchronous crawler remains available as a
+composable foundation for reliable, polite, and observable web crawling.
 
 ## Status
 
@@ -20,6 +20,116 @@ The integrated crawler also supports recursive sitemap indexes, validated JSON
 configuration, advanced status and domain statistics, JSON and standalone HTML
 reports, rotating file logs, live percentage/speed/ETA reporting, and a
 production command-line entry point.
+CrawlForge can also clean successful pages, split them into stable
+heading-aware chunks, index them in local SQLite FTS5, retrieve BM25-ranked
+fragments, and build a source-linked context under an approximate token budget.
+The local stdio MCP adapter exposes those same application-service operations
+through four bounded tools.
+
+## Local web-context retrieval
+
+The web-context layer reduces raw page noise before retrieval. It removes
+scripts, styles, and conservative navigation boilerplate; preserves headings,
+lists, links, code, Unicode, and simple tables; and produces plain text plus a
+minimal normalized Markdown representation. The resulting chunks are stored in
+a transactional, deduplicated SQLite FTS5 index.
+
+Create or update a local index:
+
+```bash
+crawlforge index https://example.com/docs \
+  --database .crawlforge/index.db \
+  --max-pages 100 \
+  --max-depth 2
+```
+
+Search and select complete chunks within a budget:
+
+```bash
+crawlforge search "How are retries configured?" \
+  --database .crawlforge/index.db \
+  --limit 5 \
+  --token-budget 3000
+```
+
+Add `--json` to either command for machine-readable standard output. Diagnostic
+logs remain on standard error.
+
+The same operations are available through the application service used by the
+CLI:
+
+```python
+import asyncio
+
+from crawlforge import ContextEngine
+
+
+async def retrieve() -> None:
+    async with ContextEngine(".crawlforge/index.db") as engine:
+        await engine.ingest_url(
+            "https://example.com/docs",
+            max_pages=100,
+            max_depth=2,
+        )
+        context = await engine.build_context(
+            "How are retries configured?",
+            limit=10,
+            token_budget=3000,
+        )
+
+    for hit in context.hits:
+        print(hit.chunk.text)
+        print(hit.source.url)
+
+
+asyncio.run(retrieve())
+```
+
+`SearchHit.bm25_score` is the raw SQLite FTS5 score: lower values are more
+relevant. The default token estimator is a deterministic character heuristic,
+not the tokenizer of a particular model. Consequently,
+`estimated_context_reduction` is an engineering estimate rather than a measured
+model-specific token saving.
+
+The default database is `.crawlforge/index.db`. Remove that selected local file
+to clear the index. Detailed architecture, schema, metrics, cleanup, chunking,
+and limitations are documented in
+[`docs/web-context.md`](docs/web-context.md).
+
+## Local MCP adapter
+
+The MCP workflow is deliberately small:
+
+```text
+crawl/index once -> query locally many times -> return bounded relevant context
+```
+
+Install the optional official MCP SDK integration and start the stdio server:
+
+```bash
+uv sync --extra mcp
+uv run crawlforge-mcp --database .crawlforge/index.db
+```
+
+The server exposes only `index_site`, `search_index`, `build_context`, and
+`get_index_info`. It owns one `ContextEngine` and a fixed database path for its
+lifecycle. Tool calls cannot select a local file, execute SQL, relax server
+caps, or enable private-network access. `index_site` makes real network
+requests, obeys robots.txt, and blocks private or non-routable targets by
+default, including redirect destinations and resolved DNS addresses. Server
+startup also bounds page and robots body sizes, individual request attempts,
+and total crawl duration.
+
+MCP runs locally over stdio; the SQLite database remains under the user's
+control. Retrieval is lexical BM25, token counts are approximate, and retrieved
+website text is untrusted external content rather than server instructions.
+Keep result URLs as provenance. Installation, client configuration, tools,
+security policy, and Inspector verification are documented in
+[`docs/mcp.md`](docs/mcp.md).
+
+This stage does not include embeddings, a vector database, hybrid search,
+reranking, external model calls, generated answers, browser rendering, remote
+MCP hosting, or background crawl jobs.
 
 ## Integrated crawler
 

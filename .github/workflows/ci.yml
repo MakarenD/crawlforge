@@ -30,7 +30,7 @@ jobs:
         with:
           enable-cache: true
       - name: Install project
-        run: uv pip install --system -e ".[dev]"
+        run: uv pip install --system -e ".[dev,mcp]"
       - name: Check dependencies
         run: uv pip check --system
       - name: Lint
@@ -64,6 +64,6 @@ jobs:
         with:
           enable-cache: true
       - name: Install project
-        run: uv pip install --system -e ".[dev]"
+        run: uv pip install --system -e ".[dev,mcp]"
       - name: Run tests
         run: python -m pytest
