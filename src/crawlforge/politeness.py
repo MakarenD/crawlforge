@@ -56,6 +56,7 @@ class _RobotsEntry:
     robots_url: str
     status: int | None
     groups: tuple[_RobotsGroup, ...]
+    fetch_failure: str | None
 
 
 @dataclass(slots=True)
@@ -156,6 +157,7 @@ class RobotsParser:
 
             status: int | None
             groups: tuple[_RobotsGroup, ...]
+            fetch_failure: str | None
             try:
                 status, content = await self._fetcher(robots_url)
             except (
@@ -164,10 +166,12 @@ class RobotsParser:
                 TransientError,
                 NetworkError,
                 PermanentError,
-            ):
+            ) as error:
                 status = None
                 groups = (self._deny_all_group(),)
+                fetch_failure = f"{type(error).__name__}: {error}"
             else:
+                fetch_failure = None
                 if 200 <= status < 300:
                     groups = self._parse(content)
                 elif status in {401, 403} or status >= 500:
@@ -175,10 +179,22 @@ class RobotsParser:
                 else:
                     groups = ()
 
-            entry = _RobotsEntry(origin, robots_url, status, groups)
+            entry = _RobotsEntry(
+                origin,
+                robots_url,
+                status,
+                groups,
+                fetch_failure,
+            )
             self._cache[origin] = entry
             self._last_origin = origin
             return self._snapshot(entry, cached=False)
+
+    def get_fetch_failure_for(self, url: str) -> str | None:
+        """Return the cached transport failure that caused fail-closed policy."""
+        origin, _robots_url = self._origin_and_robots_url(url)
+        entry = self._cache.get(origin)
+        return entry.fetch_failure if entry is not None else None
 
     def can_fetch(self, url: str, user_agent: str = "*") -> bool:
         """Return whether cached rules permit a user agent to fetch a URL."""

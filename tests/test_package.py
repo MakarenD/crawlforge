@@ -2,13 +2,23 @@
 
 from crawlforge import (
     AdvancedCrawler,
+    ChunkingConfig,
+    ContentProcessor,
+    ContextEngine,
+    ContextResult,
+    CrawledPage,
     CrawlerConfig,
     CrawlerQueue,
     CrawlerStats,
     CSVStorage,
     DataStorage,
     ErrorRecord,
+    FTS5UnavailableError,
+    HeuristicTokenEstimator,
     HTMLParser,
+    IndexInfo,
+    IndexingResult,
+    IndexSessionSummary,
     JSONStorage,
     NetworkError,
     ParseError,
@@ -16,10 +26,17 @@ from crawlforge import (
     RateLimiter,
     RetryStrategy,
     RobotsParser,
+    SearchHit,
     SemaphoreManager,
     SitemapParser,
+    SourceDocument,
+    SQLiteContextIndex,
     SQLiteStorage,
+    TextChunk,
+    TextChunker,
     TransientError,
+    URLNetworkPolicy,
+    URLPolicyError,
     __version__,
 )
 
@@ -66,3 +83,24 @@ def test_advanced_crawler_types_are_exposed() -> None:
     assert CrawlerConfig.__name__ == "CrawlerConfig"
     assert CrawlerStats.__name__ == "CrawlerStats"
     assert SitemapParser.__name__ == "SitemapParser"
+
+
+def test_web_context_types_are_exposed() -> None:
+    """The package root exposes the stable content and retrieval services."""
+    assert CrawledPage.__name__ == "CrawledPage"
+    assert SourceDocument.__name__ == "SourceDocument"
+    assert TextChunk.__name__ == "TextChunk"
+    assert SearchHit.__name__ == "SearchHit"
+    assert ContextResult.__name__ == "ContextResult"
+    assert IndexingResult.__name__ == "IndexingResult"
+    assert IndexInfo.__name__ == "IndexInfo"
+    assert IndexSessionSummary.__name__ == "IndexSessionSummary"
+    assert HeuristicTokenEstimator.__name__ == "HeuristicTokenEstimator"
+    assert ContentProcessor.__name__ == "ContentProcessor"
+    assert ChunkingConfig.__name__ == "ChunkingConfig"
+    assert TextChunker.__name__ == "TextChunker"
+    assert SQLiteContextIndex.__name__ == "SQLiteContextIndex"
+    assert FTS5UnavailableError.__name__ == "FTS5UnavailableError"
+    assert ContextEngine.__name__ == "ContextEngine"
+    assert URLNetworkPolicy.__name__ == "URLNetworkPolicy"
+    assert URLPolicyError.__name__ == "URLPolicyError"

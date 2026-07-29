@@ -1,10 +1,28 @@
 """CrawlForge package."""
 
 from crawlforge.advanced import AdvancedCrawler
+from crawlforge.chunking import ChunkingConfig, TextChunker
 from crawlforge.concurrency import SemaphoreManager, SemaphoreStats
 from crawlforge.config import CrawlerConfig, LoggingConfig, ReportConfig, StorageConfig
-from crawlforge.crawler import AsyncCrawler, CrawlStats
+from crawlforge.content import ContentProcessor
+from crawlforge.context_engine import ContextEngine, EmptyCrawlError
+from crawlforge.context_index import FTS5UnavailableError, SQLiteContextIndex
+from crawlforge.context_models import (
+    ContextResult,
+    DocumentBlock,
+    HeuristicTokenEstimator,
+    IndexInfo,
+    IndexingResult,
+    IndexSessionSummary,
+    SearchHit,
+    SourceDocument,
+    SourceReference,
+    TextChunk,
+    TokenEstimator,
+)
+from crawlforge.crawler import AsyncCrawler, CrawledPage, CrawlStats, PageHandler
 from crawlforge.errors import NetworkError, ParseError, PermanentError, TransientError
+from crawlforge.network_policy import URLNetworkPolicy, URLPolicyError
 from crawlforge.parser import HTMLParser, ParsedPage
 from crawlforge.politeness import RateLimiter, RobotsData, RobotsParser
 from crawlforge.queue import CrawlerQueue, QueueStats
@@ -25,6 +43,11 @@ __all__ = [
     "AdvancedCrawler",
     "AsyncCrawler",
     "CSVStorage",
+    "ChunkingConfig",
+    "ContentProcessor",
+    "ContextEngine",
+    "ContextResult",
+    "CrawledPage",
     "CrawlerQueue",
     "CrawlerConfig",
     "CrawlerStats",
@@ -32,15 +55,23 @@ __all__ = [
     "CrawlData",
     "CrawlStats",
     "DataStorage",
+    "DocumentBlock",
     "DomainCount",
+    "EmptyCrawlError",
     "ErrorRecord",
+    "FTS5UnavailableError",
     "HTMLParser",
+    "HeuristicTokenEstimator",
+    "IndexInfo",
+    "IndexSessionSummary",
+    "IndexingResult",
     "JSONStorage",
     "LoggingConfig",
     "NetworkError",
     "ParseError",
     "ParsedPage",
     "PermanentError",
+    "PageHandler",
     "QueueStats",
     "RateLimiter",
     "RetryStats",
@@ -51,8 +82,17 @@ __all__ = [
     "SemaphoreManager",
     "SemaphoreStats",
     "SQLiteStorage",
+    "SQLiteContextIndex",
+    "SearchHit",
     "SitemapParser",
+    "SourceDocument",
+    "SourceReference",
     "StorageConfig",
+    "TextChunk",
+    "TextChunker",
+    "TokenEstimator",
     "TransientError",
+    "URLNetworkPolicy",
+    "URLPolicyError",
     "__version__",
 ]

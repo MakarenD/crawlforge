@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from collections.abc import Callable
 from typing import TypedDict, TypeVar
 from urllib.parse import urldefrag, urljoin, urlsplit
 
 from bs4 import BeautifulSoup, Comment, Tag
+
+from crawlforge.async_utils import run_lifecycle_owned_thread
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class HTMLParser:
 
     async def parse_html(self, html: str, url: str) -> ParsedPage:
         """Parse HTML without blocking the event loop."""
-        return await asyncio.to_thread(self._parse_html, html, url)
+        return await run_lifecycle_owned_thread(self._parse_html, html, url)
 
     def extract_links(self, soup: BeautifulSoup, base_url: str) -> list[str]:
         """Return unique absolute HTTP links in document order."""

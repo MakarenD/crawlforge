@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "crawlforge"
 dynamic = ["version"]
-description = "A high-performance asynchronous web crawler for Python."
+description = "Local HTTP-first web-context engine with BM25 retrieval and MCP."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
@@ -31,6 +31,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+mcp = [
+  "mcp>=2.0.0,<3.0.0",
+  "cryptography<49; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+]
 dev = [
   "mypy>=1.15",
   "pytest>=8.3",
@@ -41,6 +45,7 @@ dev = [
 
 [project.scripts]
 crawlforge = "crawlforge.cli:main"
+crawlforge-mcp = "crawlforge.mcp.cli:main"
 
 [tool.hatch.version]
 path = "src/crawlforge/__init__.py"

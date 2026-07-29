@@ -258,10 +258,10 @@ async def test_parse_html_does_not_block_event_loop(
 
 
 @pytest.mark.asyncio
-async def test_parse_html_cancellation_propagates(
+async def test_parse_html_cancellation_waits_for_owned_worker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Cancelling parser work is not converted into a partial success."""
+    """Cancellation cannot leave parser work running after the task exits."""
     parser = HTMLParser()
     worker_started = threading.Event()
     release_worker = threading.Event()
@@ -276,11 +276,11 @@ async def test_parse_html_cancellation_propagates(
     await asyncio.wait_for(asyncio.to_thread(worker_started.wait), timeout=5)
     task.cancel()
 
-    try:
-        with pytest.raises(asyncio.CancelledError):
-            await task
-    finally:
-        release_worker.set()
+    await asyncio.sleep(0)
+    assert not task.done()
+    release_worker.set()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(task, timeout=5)
 
 
 def test_missing_metadata_and_empty_collections_are_explicit() -> None:
