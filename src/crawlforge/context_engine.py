@@ -8,6 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 from time import perf_counter
 from types import TracebackType
+from typing import TYPE_CHECKING
 
 from crawlforge.chunking import TextChunker
 from crawlforge.content import ContentProcessor
@@ -22,8 +23,19 @@ from crawlforge.context_models import (
     TextChunk,
     TokenEstimator,
 )
+from crawlforge.context_selection import select_bounded_context
 from crawlforge.crawler import AsyncCrawler, CrawledPage
 from crawlforge.network_policy import URLNetworkPolicy
+
+if TYPE_CHECKING:
+    from crawlforge.semantic_models import (
+        EmbeddingProvider,
+        SemanticContextResult,
+        SemanticIndexInfo,
+        SemanticIndexingResult,
+        SemanticSearchHit,
+        SemanticSearchResult,
+    )
 
 IndexablePage = SourceDocument | CrawledPage
 
@@ -197,47 +209,94 @@ class ContextEngine:
         started_at = perf_counter()
         candidates = await self.search(query, limit=limit)
         search_time_ms = (perf_counter() - started_at) * 1000
-
-        deduplicated: list[SearchHit] = []
-        seen_hashes: set[str] = set()
-        for hit in candidates:
-            if hit.chunk.content_hash in seen_hashes:
-                continue
-            seen_hashes.add(hit.chunk.content_hash)
-            deduplicated.append(hit)
-
-        selected: list[SearchHit] = []
-        estimated_tokens = 0
-        total_size_chars = 0
-        for hit in deduplicated:
-            next_tokens = estimated_tokens + hit.chunk.estimated_tokens
-            if next_tokens > token_budget:
-                continue
-            selected.append(hit)
-            estimated_tokens = next_tokens
-            total_size_chars += hit.chunk.size_chars
-
-        source_estimated_tokens = sum(
-            hit.source.source_estimated_tokens for hit in _unique_sources(deduplicated)
-        )
-        reduction = (
-            max(0.0, min(1.0, 1 - estimated_tokens / source_estimated_tokens))
-            if source_estimated_tokens
-            else 0.0
+        selection = select_bounded_context(
+            candidates,
+            token_budget=token_budget,
         )
         return ContextResult(
             query=query,
-            hits=tuple(selected),
-            total_size_chars=total_size_chars,
-            estimated_tokens=estimated_tokens,
-            candidates_considered=len(candidates),
+            hits=selection.hits,
+            total_size_chars=selection.total_size_chars,
+            estimated_tokens=selection.estimated_tokens,
+            candidates_considered=selection.candidate_count,
             search_time_ms=search_time_ms,
             limit=limit,
             token_budget=token_budget,
-            source_estimated_tokens=source_estimated_tokens,
-            estimated_context_reduction=reduction,
+            source_estimated_tokens=selection.source_estimated_tokens,
+            estimated_context_reduction=selection.estimated_context_reduction,
             index_hit=bool(candidates),
         )
+
+    async def index_embeddings(
+        self,
+        provider: EmbeddingProvider,
+        *,
+        batch_size: int = 32,
+    ) -> SemanticIndexingResult:
+        """Incrementally embed existing chunks through the semantic service."""
+        from crawlforge.semantic import SemanticContextEngine
+
+        await self._ensure_ready()
+        return await SemanticContextEngine(self, provider).index(batch_size=batch_size)
+
+    async def semantic_search(
+        self,
+        query: str,
+        *,
+        provider: EmbeddingProvider,
+        limit: int = 5,
+    ) -> list[SemanticSearchHit]:
+        """Return exact cosine-ranked semantic matches."""
+        result = await self.semantic_search_with_metrics(
+            query,
+            provider=provider,
+            limit=limit,
+        )
+        return list(result.hits)
+
+    async def semantic_search_with_metrics(
+        self,
+        query: str,
+        *,
+        provider: EmbeddingProvider,
+        limit: int = 5,
+    ) -> SemanticSearchResult:
+        """Return semantic hits with separated local timing measurements."""
+        from crawlforge.semantic import SemanticContextEngine
+
+        await self._ensure_ready()
+        return await SemanticContextEngine(self, provider).search_with_metrics(
+            query,
+            limit=limit,
+        )
+
+    async def build_semantic_context(
+        self,
+        query: str,
+        *,
+        provider: EmbeddingProvider,
+        limit: int = 10,
+        token_budget: int = 3000,
+    ) -> SemanticContextResult:
+        """Build bounded semantic context through shared chunk selection."""
+        from crawlforge.semantic import SemanticContextEngine
+
+        await self._ensure_ready()
+        return await SemanticContextEngine(self, provider).build_context(
+            query,
+            limit=limit,
+            token_budget=token_budget,
+        )
+
+    async def get_semantic_index_info(
+        self,
+        provider: EmbeddingProvider,
+    ) -> SemanticIndexInfo:
+        """Return readiness for the provider's exact model fingerprint."""
+        from crawlforge.semantic import SemanticContextEngine
+
+        await self._ensure_ready()
+        return await SemanticContextEngine(self, provider).get_index_info()
 
     async def get_index_info(self) -> IndexInfo:
         """Return a bounded readiness, size, and latest-session summary."""
@@ -332,17 +391,6 @@ def _add_indexing_results(
             sorted({*total.failure_categories, *delta.failure_categories})
         ),
     )
-
-
-def _unique_sources(hits: Sequence[SearchHit]) -> list[SearchHit]:
-    unique: list[SearchHit] = []
-    seen: set[str] = set()
-    for hit in hits:
-        if hit.source.document_id in seen:
-            continue
-        seen.add(hit.source.document_id)
-        unique.append(hit)
-    return unique
 
 
 def _empty_crawl_message(errors: Iterable[str]) -> str:

@@ -1,5 +1,9 @@
 """Tests for package metadata and public exports."""
 
+import json
+import subprocess
+import sys
+
 from crawlforge import (
     AdvancedCrawler,
     ChunkingConfig,
@@ -104,3 +108,23 @@ def test_web_context_types_are_exposed() -> None:
     assert ContextEngine.__name__ == "ContextEngine"
     assert URLNetworkPolicy.__name__ == "URLNetworkPolicy"
     assert URLPolicyError.__name__ == "URLPolicyError"
+
+
+def test_base_package_import_does_not_load_optional_ml_runtime() -> None:
+    """Importing crawlforge remains lightweight without semantic inference."""
+    script = (
+        "import json, sys; import crawlforge; "
+        "print(json.dumps(sorted(name for name in sys.modules "
+        "if name == 'torch' or name.startswith('sentence_transformers'))))"
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0
+    assert json.loads(result.stdout) == []

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import shutil
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -66,6 +67,30 @@ def test_versioned_benchmark_dataset_is_valid_and_balanced() -> None:
     assert sum(len(document.sections) for document in dataset.documents) == 40
     assert len(dataset.queries) == 64
     assert set(category_counts.values()) == {8}
+
+
+def test_dataset_signature_tracks_exact_frozen_files(tmp_path: Path) -> None:
+    """Identical copies match while any source-byte change changes identity."""
+    first_root = tmp_path / "first"
+    second_root = tmp_path / "second"
+    shutil.copytree(BENCHMARK, first_root)
+    shutil.copytree(BENCHMARK, second_root)
+
+    first = load_dataset(first_root)
+    second = load_dataset(second_root)
+    assert first.signature == second.signature
+    assert len(first.signature) == 64
+    assert filter_dataset(first, query_ids=frozenset({"q001"})).signature == (
+        first.signature
+    )
+
+    document = second_root / second.documents[0].path
+    document.write_text(
+        document.read_text(encoding="utf-8") + "\n",
+        encoding="utf-8",
+    )
+
+    assert load_dataset(second_root).signature != first.signature
 
 
 def test_dataset_loader_rejects_absolute_document_paths(tmp_path: Path) -> None:

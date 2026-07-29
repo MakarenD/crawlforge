@@ -220,7 +220,7 @@ async def test_context_engine_exposes_bounded_index_info(tmp_path: Path) -> None
     info = await engine.get_index_info()
     await engine.close()
 
-    assert info.schema_version == 2
+    assert info.schema_version == 3
     assert info.document_count == 0
     assert info.chunk_count == 0
     assert info.database_ready

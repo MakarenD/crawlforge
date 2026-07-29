@@ -9,11 +9,13 @@ AsyncCrawler
   -> ContentProcessor
   -> SourceDocument
   -> TextChunker
-  -> SQLiteContextIndex (FTS5/BM25)
+  -> SQLiteContextIndex
+       -> FTS5/BM25
+       -> optional float32 embeddings / exact cosine
   -> ContextEngine
        -> Python callers
        -> CLI
-       -> local MCP stdio adapter
+       -> local MCP stdio adapter (BM25 only)
 ```
 
 The crawler remains responsible for HTTP, discovery, politeness, retries, and
@@ -63,6 +65,11 @@ does not need to remain in memory.
 have asynchronous or synchronous APIs appropriate to their resource ownership.
 The engine and index are asynchronous context managers and close their SQLite
 connection deterministically.
+
+Optional semantic methods reuse the same engine and provenance boundary:
+`index_embeddings()`, `semantic_search()`, and
+`build_semantic_context()`. They require an explicit `EmbeddingProvider`;
+details are in [Local semantic retrieval](semantic-retrieval.md).
 
 ## CLI
 
@@ -165,6 +172,9 @@ The schema contains:
 - `chunk_provenance` — one deterministic, directly addressable source for each
   deduplicated chunk;
 - `index_sessions` — counts, sizes, approximate token totals, and timings;
+- `embedding_models` — compatible embedding fingerprints and configuration;
+- `chunk_embeddings` — normalized float32 vectors for deduplicated chunks;
+- `embedding_sessions` — incremental embedding outcomes and timings;
 - `chunk_fts` — FTS5 text, document-title, and heading-path columns.
 
 Document and chunk batches are written in explicit transactions with
@@ -178,6 +188,12 @@ Schema version 2 materializes chunk provenance so search hydration is bounded
 by the result limit even when identical chunks occur at many source URLs.
 Opening a version-1 context index migrates it transactionally and backfills the
 deterministic source mapping.
+
+Schema version 3 adds optional semantic storage without changing FTS5 tables or
+BM25 behavior. Opening a version-2 index creates the semantic tables
+transactionally. Embeddings reference the internal globally deduplicated chunk
+identity, are isolated by a configuration fingerprint, and are removed when
+their chunk is no longer referenced.
 
 FTS5 `bm25()` returns smaller values for stronger matches. CrawlForge sorts the
 raw score in ascending order and exposes it as `SearchHit.bm25_score`; the
@@ -212,7 +228,7 @@ budget, and whether the index produced a hit.
 
 ## Current limits
 
-This stage is a lexical baseline:
+The default retrieval path is still the lexical baseline:
 
 - BM25 matches terms, not semantic intent or paraphrases;
 - ranking depends on corpus term statistics and can favor rare literal terms;
@@ -222,9 +238,10 @@ This stage is a lexical baseline:
   multiple equivalent sources;
 - SQLite FTS5 must be available in the active Python SQLite build.
 
-There are no embeddings, vector database, hybrid retrieval, reranker, external
-model calls, generated answers, browser rendering, or remote HTTP service in
-this stage. The local MCP stdio adapter reuses the stable `ContextEngine`
-boundary; it does not duplicate crawling, cleaning, chunking, SQL, or ranking.
-See [`mcp.md`](mcp.md) for its fixed configuration, security model, and four
-bounded tools.
+The optional semantic path provides local embeddings and a linear exact scan,
+not an approximate vector database. There is no hybrid retrieval, reranker,
+hosted embedding call, generated answer, browser rendering, or remote HTTP
+service. The local MCP stdio adapter reuses the stable `ContextEngine` boundary
+but exposes only BM25; it does not duplicate crawling, cleaning, chunking, SQL,
+or ranking. See [`mcp.md`](mcp.md) for its fixed configuration, security model,
+and four bounded tools.

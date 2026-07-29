@@ -43,13 +43,19 @@ def render_markdown_report(run: EvaluationRun) -> str:
         raise TypeError("limit_values must be an integer list")
     limits = tuple(raw_limits)
     focus_limit = 5 if 5 in limits else max(limits)
+    is_semantic = run.retrieval_strategy.startswith("semantic")
     lines = [
-        "# CrawlForge BM25 Retrieval Baseline",
+        (
+            "# CrawlForge Semantic Retrieval Baseline"
+            if is_semantic
+            else "# CrawlForge BM25 Retrieval Baseline"
+        ),
         "",
         "## Dataset",
         "",
         f"- Name: `{run.dataset_name}`",
         f"- Version: `{run.dataset_version}`",
+        f"- Signature: `{run.dataset_signature}`",
         f"- Retrieval strategy: `{run.retrieval_strategy}`",
         f"- Queries: {run.aggregate_metrics.query_count}",
         f"- Timestamp: `{run.timestamp}`",
@@ -81,6 +87,9 @@ def render_markdown_report(run: EvaluationRun) -> str:
     ]
     for key, value in sorted(run.chunking_configuration.items()):
         lines.append(f"- `{key}`: `{value}`")
+    lines.extend(["", "## Retrieval configuration", ""])
+    for key, value in sorted(run.retrieval_configuration.items()):
+        lines.append(f"- `{key}`: `{_configuration_value(value)}`")
 
     lines.extend(
         [
@@ -271,8 +280,8 @@ def render_markdown_report(run: EvaluationRun) -> str:
                 "heading, and optional evidence checks; it does not infer semantics."
             ),
             (
-                "- Negative-query abstention is strict because raw SQLite FTS5 BM25 "
-                "scores are not calibrated confidence values."
+                "- Negative-query abstention is strict because retrieval scores are "
+                "not calibrated confidence values."
             ),
             (
                 "- Token counts use CrawlForge's deterministic character heuristic and "
@@ -288,15 +297,31 @@ def render_markdown_report(run: EvaluationRun) -> str:
         lines.append(f"- Warning: {_escape(warning)}")
     for failure in run.failures:
         lines.append(f"- Failure: {_escape(failure)}")
-    lines.extend(
-        [
-            "",
-            "## Readiness for semantic retrieval",
-            "",
-            _semantic_conclusion(run, focus_limit),
-            "",
-        ]
-    )
+    if is_semantic:
+        lines.extend(
+            [
+                "",
+                "## Semantic baseline interpretation",
+                "",
+                (
+                    "This is an isolated exact-cosine baseline. Its effect should be "
+                    "interpreted only through the paired BM25 comparison on the same "
+                    "dataset and chunks; it does not include fusion, reranking, or a "
+                    "negative-query threshold."
+                ),
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "",
+                "## Readiness for semantic retrieval",
+                "",
+                _semantic_conclusion(run, focus_limit),
+                "",
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -417,6 +442,15 @@ def _json_compatible(value: object) -> object:
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     raise TypeError(f"unsupported report value: {type(value).__name__}")
+
+
+def _configuration_value(value: object) -> str:
+    return json.dumps(
+        _json_compatible(value),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 def _percent(value: float) -> str:

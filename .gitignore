@@ -10,6 +10,7 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+graphify-out/
 
 # Build and packaging artifacts
 build/

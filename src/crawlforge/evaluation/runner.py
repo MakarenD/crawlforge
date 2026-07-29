@@ -11,7 +11,7 @@ from typing import Protocol, runtime_checkable
 
 from crawlforge.context_engine import ContextEngine
 from crawlforge.crawler import CrawledPage
-from crawlforge.evaluation.dataset import validate_dataset
+from crawlforge.evaluation.dataset import dataset_signature, validate_dataset
 from crawlforge.evaluation.metrics import (
     query_metric_values,
     summarize_context_quality,
@@ -48,10 +48,26 @@ class RetrievalStrategy(Protocol):
         """Return ranked items without evaluator-side score sorting."""
 
 
+@runtime_checkable
+class RetrievalWarnings(Protocol):
+    """Optional strategy-specific methodological warnings."""
+
+    @property
+    def warnings(self) -> Sequence[str]:
+        """Return stable warnings for the evaluation report."""
+
+
 class BM25ContextEngineStrategy:
     """Map public ContextEngine search hits into strategy-neutral items."""
 
     name = "bm25-fts5"
+
+    @property
+    def warnings(self) -> Sequence[str]:
+        return (
+            "Negative-query no-result accuracy treats any returned lexical "
+            "candidate as a false positive because BM25 scores are not calibrated.",
+        )
 
     def __init__(
         self,
@@ -186,11 +202,9 @@ class RetrievalEvaluationRunner:
         warmup_queries = self._dataset.queries[: min(3, len(self._dataset.queries))]
         warnings = [
             "Latency values are warm-index measurements for this machine only.",
-            (
-                "Negative-query no-result accuracy treats any returned lexical "
-                "candidate as a false positive because BM25 scores are not calibrated."
-            ),
         ]
+        if isinstance(self._retriever, RetrievalWarnings):
+            warnings.extend(self._retriever.warnings)
         for query in warmup_queries:
             try:
                 await self._retriever.search(query.query, limit=maximum_limit)
@@ -261,6 +275,7 @@ class RetrievalEvaluationRunner:
             worst_queries=_worst_query_ids(results, maximum_limit),
             failures=tuple(failures),
             warnings=tuple(dict.fromkeys(warnings)),
+            dataset_signature=dataset_signature(self._dataset),
         )
 
     async def _evaluate_query(

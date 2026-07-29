@@ -1,7 +1,19 @@
 """Deterministic retrieval evaluation over CrawlForge's public context API."""
 
+from crawlforge.evaluation.comparison import (
+    BootstrapInterval,
+    CategoryDelta,
+    EvaluationComparison,
+    MetricDelta,
+    QueryComparison,
+    compare_evaluation_runs,
+    render_comparison_json,
+    render_comparison_markdown,
+    write_comparison_report,
+)
 from crawlforge.evaluation.dataset import (
     DatasetValidationError,
+    dataset_signature,
     filter_dataset,
     load_dataset,
     validate_dataset,
@@ -30,30 +42,42 @@ from crawlforge.evaluation.runner import (
     RetrievalStrategy,
     ingest_evaluation_corpus,
 )
+from crawlforge.evaluation.semantic_strategy import SemanticContextEngineStrategy
 
 __all__ = [
     "QUERY_CATEGORIES",
     "BM25ContextEngineStrategy",
+    "BootstrapInterval",
     "CategorySummary",
+    "CategoryDelta",
     "ContextQualitySummary",
     "CorpusStatistics",
     "DatasetValidationError",
     "EvaluationDataset",
+    "EvaluationComparison",
     "EvaluationDocument",
     "EvaluationQuery",
     "EvaluationRun",
     "EvaluationSection",
     "LatencySummary",
     "MetricSummary",
+    "MetricDelta",
     "QueryCategory",
     "QueryEvaluation",
+    "QueryComparison",
     "QueryMetricValues",
     "RelevanceJudgment",
     "RetrievalEvaluationRunner",
     "RetrievalStrategy",
     "RetrievedItem",
+    "SemanticContextEngineStrategy",
+    "compare_evaluation_runs",
+    "dataset_signature",
     "filter_dataset",
     "ingest_evaluation_corpus",
     "load_dataset",
+    "render_comparison_json",
+    "render_comparison_markdown",
     "validate_dataset",
+    "write_comparison_report",
 ]

@@ -67,3 +67,34 @@ jobs:
         run: uv pip install --system -e ".[dev,mcp]"
       - name: Run tests
         run: python -m pytest
+
+  semantic-extra:
+    name: Semantic extra (Python 3.12, offline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+      - name: Install semantic extra
+        run: uv pip install --system -e ".[dev,semantic]"
+      - name: Import semantic provider
+        run: python -c "from crawlforge.semantic_provider import SentenceTransformerEmbeddingProvider"
+      - name: Run deterministic semantic tests
+        run: >-
+          python -m pytest
+          tests/test_semantic_models.py
+          tests/test_semantic_provider.py
+          tests/test_semantic_engine.py
+          tests/test_evaluation_comparison.py
+          tests/test_evaluation_cli.py

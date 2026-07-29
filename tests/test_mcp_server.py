@@ -153,7 +153,7 @@ async def test_get_index_info_reports_empty_and_populated_indexes(
 
     assert not empty.is_error
     assert empty.structured_content == {
-        "schema_version": 2,
+        "schema_version": 3,
         "document_count": 0,
         "chunk_count": 0,
         "last_indexed_at": None,

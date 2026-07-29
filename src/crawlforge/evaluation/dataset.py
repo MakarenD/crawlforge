@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import replace
@@ -61,6 +62,10 @@ def load_dataset(root: str | Path) -> EvaluationDataset:
         documents=tuple(documents),
         queries=tuple(queries),
         root=dataset_root,
+        signature=_file_dataset_signature(
+            dataset_root,
+            tuple(document.path for document in documents),
+        ),
     )
     validate_dataset(dataset)
     return dataset
@@ -82,6 +87,8 @@ def validate_dataset(dataset: EvaluationDataset) -> None:
         issues.append("corpus must contain at least one document")
     if not dataset.queries:
         issues.append("dataset must contain at least one query")
+    if dataset.signature and not re.fullmatch(r"[0-9a-f]{64}", dataset.signature):
+        issues.append("dataset signature must be a lowercase SHA-256 digest")
 
     documents: dict[str, EvaluationDocument] = {}
     urls: set[str] = set()
@@ -157,6 +164,80 @@ def filter_dataset(
     if not selected:
         raise ValueError("evaluation filters selected no queries")
     return replace(dataset, queries=selected)
+
+
+def dataset_signature(dataset: EvaluationDataset) -> str:
+    """Return the exact loaded signature or a canonical in-memory fallback."""
+    if dataset.signature:
+        return dataset.signature
+    payload = {
+        "schema_version": dataset.schema_version,
+        "name": dataset.name,
+        "version": dataset.version,
+        "description": dataset.description,
+        "documents": [
+            {
+                "document_id": document.document_id,
+                "path": document.path,
+                "url": document.url,
+                "title": document.title,
+                "content": document.content,
+                "sections": [
+                    {
+                        "section_id": section.section_id,
+                        "heading_path": list(section.heading_path),
+                    }
+                    for section in document.sections
+                ],
+            }
+            for document in dataset.documents
+        ],
+        "queries": [
+            {
+                "query_id": query.query_id,
+                "query": query.query,
+                "category": query.category,
+                "relevant_sources": [
+                    {
+                        "judgment_id": judgment.judgment_id,
+                        "document_id": judgment.document_id,
+                        "relevance": judgment.relevance,
+                        "canonical_source": judgment.canonical_source,
+                        "section_id": judgment.section_id,
+                        "heading_path": list(judgment.heading_path),
+                        "evidence": judgment.evidence,
+                    }
+                    for judgment in query.relevant_sources
+                ],
+            }
+            for query in dataset.queries
+        ],
+    }
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _file_dataset_signature(
+    root: Path,
+    document_paths: tuple[str, ...],
+) -> str:
+    digest = hashlib.sha256()
+    digest.update(b"crawlforge-retrieval-dataset-files-v1\0")
+    paths = ("manifest.json", "queries.jsonl", *document_paths)
+    for relative in sorted(paths):
+        normalized = PurePosixPath(relative).as_posix()
+        data = (root / relative).read_bytes()
+        name = normalized.encode()
+        digest.update(len(name).to_bytes(8, "big"))
+        digest.update(name)
+        digest.update(len(data).to_bytes(8, "big"))
+        digest.update(data)
+    return digest.hexdigest()
 
 
 def _load_documents(

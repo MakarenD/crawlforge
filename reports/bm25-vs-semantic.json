@@ -1,0 +1,2259 @@
+{
+  "baseline_strategy": "bm25-fts5",
+  "bm25_retrieval_configuration": {
+    "index": "sqlite_fts5",
+    "limit_values": [
+      1,
+      3,
+      5,
+      10
+    ],
+    "ranking": "bm25",
+    "repeat_latency": 5,
+    "score_order": "ascending",
+    "token_budget": 3000,
+    "warmup_calls": 3
+  },
+  "bm25_wins": [
+    "q002",
+    "q004",
+    "q007",
+    "q011",
+    "q016",
+    "q023",
+    "q027",
+    "q033",
+    "q039",
+    "q040",
+    "q042",
+    "q046",
+    "q047",
+    "q052",
+    "q054",
+    "q055",
+    "q056",
+    "q059",
+    "q060",
+    "q062",
+    "q064"
+  ],
+  "both_fail": [
+    "q057",
+    "q058",
+    "q059",
+    "q060",
+    "q061",
+    "q062",
+    "q063"
+  ],
+  "both_succeed": [
+    "q001",
+    "q002",
+    "q003",
+    "q004",
+    "q005",
+    "q006",
+    "q008",
+    "q009",
+    "q010",
+    "q011",
+    "q012",
+    "q013",
+    "q014",
+    "q015",
+    "q016",
+    "q017",
+    "q018",
+    "q019",
+    "q020",
+    "q021",
+    "q022",
+    "q023",
+    "q024",
+    "q025",
+    "q026",
+    "q027",
+    "q028",
+    "q029",
+    "q030",
+    "q032",
+    "q033",
+    "q034",
+    "q035",
+    "q036",
+    "q037",
+    "q038",
+    "q039",
+    "q040",
+    "q042",
+    "q043",
+    "q044",
+    "q045",
+    "q046",
+    "q047",
+    "q048",
+    "q049",
+    "q050",
+    "q051",
+    "q052",
+    "q053",
+    "q054",
+    "q055",
+    "q056"
+  ],
+  "candidate_strategy": "semantic-exact-cosine",
+  "category_metrics": [
+    {
+      "bm25_mrr": 1.0,
+      "category": "exact_term",
+      "delta": -0.1875,
+      "semantic_mrr": 0.8125
+    },
+    {
+      "bm25_mrr": 1.0,
+      "category": "code_symbol",
+      "delta": -0.15625,
+      "semantic_mrr": 0.84375
+    },
+    {
+      "bm25_mrr": 1.0,
+      "category": "error_lookup",
+      "delta": 0.0,
+      "semantic_mrr": 1.0
+    },
+    {
+      "bm25_mrr": 0.7638888888888888,
+      "category": "paraphrase",
+      "delta": 0.09027777777777779,
+      "semantic_mrr": 0.8541666666666666
+    },
+    {
+      "bm25_mrr": 0.7083333333333334,
+      "category": "conceptual",
+      "delta": 0.19791666666666663,
+      "semantic_mrr": 0.90625
+    },
+    {
+      "bm25_mrr": 0.6666666666666666,
+      "category": "ambiguous",
+      "delta": 0.004166666666666652,
+      "semantic_mrr": 0.6708333333333333
+    },
+    {
+      "bm25_mrr": 0.9375,
+      "category": "multi_relevant",
+      "delta": -0.03125,
+      "semantic_mrr": 0.90625
+    },
+    {
+      "bm25_mrr": 0.0,
+      "category": "negative",
+      "delta": 0.0,
+      "semantic_mrr": 0.0
+    }
+  ],
+  "chunking_configuration": {
+    "max_chars": 1600,
+    "overlap_chars": 160,
+    "target_chars": 1200
+  },
+  "dataset_name": "crawlforge-retrieval-baseline",
+  "dataset_signature": "bb1bf9a8b79f7b47f2850aac362f144d7984196648f592716c7e0d33ff00acfd",
+  "dataset_version": "1.0.0",
+  "focus_limit": 5,
+  "metrics": [
+    {
+      "bm25": 0.9642857142857143,
+      "delta": 0.017857142857142794,
+      "metric": "Hit@5",
+      "semantic": 0.9821428571428571
+    },
+    {
+      "bm25": 0.28928571428571426,
+      "delta": 0.01785714285714285,
+      "metric": "Precision@5",
+      "semantic": 0.3071428571428571
+    },
+    {
+      "bm25": 0.8020833333333333,
+      "delta": 0.02083333333333348,
+      "metric": "Recall@5",
+      "semantic": 0.8229166666666667
+    },
+    {
+      "bm25": 0.8680555555555556,
+      "delta": -0.011805555555555514,
+      "metric": "MRR",
+      "semantic": 0.8562500000000001
+    },
+    {
+      "bm25": 0.7293898809523809,
+      "delta": -0.0323660714285714,
+      "metric": "MAP@5",
+      "semantic": 0.6970238095238095
+    },
+    {
+      "bm25": 0.8099706899651958,
+      "delta": 0.00019113128228709364,
+      "metric": "NDCG@5",
+      "semantic": 0.8101618212474829
+    },
+    {
+      "bm25": 0.125,
+      "delta": -0.125,
+      "metric": "Negative no-result accuracy",
+      "semantic": 0.0
+    }
+  ],
+  "query_comparisons": [
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "exact_term",
+      "ndcg_at_5_delta": 0.0,
+      "query": "Crawl-delay",
+      "query_id": "q001",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/cli-config"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "category": "exact_term",
+      "ndcg_at_5_delta": -0.42123588899069986,
+      "query": "Retry-After",
+      "query_id": "q002",
+      "recall_at_5_delta": -0.5,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 2,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "exact_term",
+      "ndcg_at_5_delta": 0.0,
+      "query": "FTS5 virtual table",
+      "query_id": "q003",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "exact_term",
+      "ndcg_at_5_delta": -0.21284539700902816,
+      "query": "BM25 raw score",
+      "query_id": "q004",
+      "recall_at_5_delta": -0.5,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "category": "exact_term",
+      "ndcg_at_5_delta": 0.0,
+      "query": "token budget",
+      "query_id": "q005",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/politeness"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "exact_term",
+      "ndcg_at_5_delta": 0.0,
+      "query": "same-origin canonical",
+      "query_id": "q006",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "category": "exact_term",
+      "ndcg_at_5_delta": -0.8339912323981488,
+      "query": "standard output",
+      "query_id": "q007",
+      "recall_at_5_delta": -1.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "exact_term",
+      "ndcg_at_5_delta": 0.0,
+      "query": "private and non-public network addresses are blocked",
+      "query_id": "q008",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "code_symbol",
+      "ndcg_at_5_delta": 0.0,
+      "query": "AsyncCrawler",
+      "query_id": "q009",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "category": "code_symbol",
+      "ndcg_at_5_delta": 0.0,
+      "query": "SemaphoreManager",
+      "query_id": "q010",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "category": "code_symbol",
+      "ndcg_at_5_delta": -0.36907024642854247,
+      "query": "RetryStrategy",
+      "query_id": "q011",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 2,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "code_symbol",
+      "ndcg_at_5_delta": 0.0,
+      "query": "RateLimiter",
+      "query_id": "q012",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "category": "code_symbol",
+      "ndcg_at_5_delta": 0.0,
+      "query": "URLNetworkPolicy",
+      "query_id": "q013",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "code_symbol",
+      "ndcg_at_5_delta": 0.20750967131609166,
+      "query": "SQLiteContextIndex",
+      "query_id": "q014",
+      "recall_at_5_delta": -0.5,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/content-chunking"
+      ],
+      "category": "code_symbol",
+      "ndcg_at_5_delta": 0.0,
+      "query": "TextChunker",
+      "query_id": "q015",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "category": "code_symbol",
+      "ndcg_at_5_delta": -0.5693234419266069,
+      "query": "ServerRuntime",
+      "query_id": "q016",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 4,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "category": "error_lookup",
+      "ndcg_at_5_delta": 0.0,
+      "query": "token_budget must be greater than zero",
+      "query_id": "q017",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/cli-config"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "error_lookup",
+      "ndcg_at_5_delta": 0.0,
+      "query": "FTS5UnavailableError when SQLite lacks search support",
+      "query_id": "q018",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "error_lookup",
+      "ndcg_at_5_delta": 0.0,
+      "query": "invalid Retry-After header is ignored",
+      "query_id": "q019",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/url-security"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "category": "error_lookup",
+      "ndcg_at_5_delta": 0.0,
+      "query": "robots policy unavailable",
+      "query_id": "q020",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "error_lookup",
+      "ndcg_at_5_delta": 0.0,
+      "query": "redirect limit exceeded",
+      "query_id": "q021",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "category": "error_lookup",
+      "ndcg_at_5_delta": 0.0,
+      "query": "CrawlForge MCP support is not installed",
+      "query_id": "q022",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/politeness"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "error_lookup",
+      "ndcg_at_5_delta": -0.16600876760185124,
+      "query": "database is locked with no traceback",
+      "query_id": "q023",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "category": "error_lookup",
+      "ndcg_at_5_delta": 0.0,
+      "query": "empty response body or failed fetch",
+      "query_id": "q024",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "paraphrase",
+      "ndcg_at_5_delta": 0.0,
+      "query": "How should a crawler distinguish connection setup time from a stalled body stream?",
+      "query_id": "q025",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "category": "paraphrase",
+      "ndcg_at_5_delta": 0.0,
+      "query": "How can the scheduler avoid creating a live task for every discovered link?",
+      "query_id": "q026",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "category": "paraphrase",
+      "ndcg_at_5_delta": -0.2821170206577823,
+      "query": "What delay should be used when a throttling response supplies a date or number of seconds?",
+      "query_id": "q027",
+      "recall_at_5_delta": 0.5,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 2,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "category": "paraphrase",
+      "ndcg_at_5_delta": 0.0,
+      "query": "When does a missing crawler policy file allow requests, and when should access be denied?",
+      "query_id": "q028",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/url-security"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 2,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "paraphrase",
+      "ndcg_at_5_delta": 0.4826416350963233,
+      "query": "Why must every resolved address be checked even when the hostname is permitted?",
+      "query_id": "q029",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/cli-config"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "category": "paraphrase",
+      "ndcg_at_5_delta": 0.0,
+      "query": "How can a schema upgrade remain retryable after a failed backfill?",
+      "query_id": "q030",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/cli-config"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 9,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "paraphrase",
+      "ndcg_at_5_delta": 0.5,
+      "query": "Why should context assembly skip an oversized passage instead of slicing it?",
+      "query_id": "q031",
+      "recall_at_5_delta": 1.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 3,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 2,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "category": "paraphrase",
+      "ndcg_at_5_delta": 0.26712894341422266,
+      "query": "How are navigation clutter and useful technical structure treated during extraction?",
+      "query_id": "q032",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "conceptual",
+      "ndcg_at_5_delta": -0.014827445202532763,
+      "query": "Why is one pooled HTTP session preferable to a session per URL?",
+      "query_id": "q033",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/content-chunking"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 2,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "conceptual",
+      "ndcg_at_5_delta": 0.26712894341422266,
+      "query": "What invariants make cancellation safe for bounded worker tasks?",
+      "query_id": "q034",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/content-chunking"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 2,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "category": "conceptual",
+      "ndcg_at_5_delta": 0.3385553017036569,
+      "query": "Why are retries limited to classified temporary failures?",
+      "query_id": "q035",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "conceptual",
+      "ndcg_at_5_delta": 0.0,
+      "query": "How do request capacity and start-time spacing solve different politeness problems?",
+      "query_id": "q036",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/content-chunking"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/content-chunking"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 3,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "category": "conceptual",
+      "ndcg_at_5_delta": 0.6831312932610384,
+      "query": "Why are hostname allowlists insufficient protection against server-side request forgery?",
+      "query_id": "q037",
+      "recall_at_5_delta": 0.6666666666666667,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 3,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "conceptual",
+      "ndcg_at_5_delta": 0.5240828591646209,
+      "query": "Why should crawl history and the lexical retrieval index use separate schemas?",
+      "query_id": "q038",
+      "recall_at_5_delta": 0.5,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "conceptual",
+      "ndcg_at_5_delta": -0.08268058728704286,
+      "query": "What does a strong context reduction percentage prove and not prove?",
+      "query_id": "q039",
+      "recall_at_5_delta": -0.5,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "conceptual",
+      "ndcg_at_5_delta": -0.5693234419266069,
+      "query": "Why must retrieved page text remain untrusted at a tool boundary?",
+      "query_id": "q040",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 4,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/url-security"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 6,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "category": "ambiguous",
+      "ndcg_at_5_delta": 0.2501943181583481,
+      "query": "limits",
+      "query_id": "q041",
+      "recall_at_5_delta": 0.25,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 5,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/url-security"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "ambiguous",
+      "ndcg_at_5_delta": -0.5188972012643011,
+      "query": "cleanup",
+      "query_id": "q042",
+      "recall_at_5_delta": -0.3333333333333333,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 3,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 3,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "ambiguous",
+      "ndcg_at_5_delta": 0.2572727022746398,
+      "query": "identity",
+      "query_id": "q043",
+      "recall_at_5_delta": 0.3333333333333333,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 2,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "ambiguous",
+      "ndcg_at_5_delta": 0.2529881939358365,
+      "query": "storage",
+      "query_id": "q044",
+      "recall_at_5_delta": 0.3333333333333333,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "ambiguous",
+      "ndcg_at_5_delta": 0.0073804958252980946,
+      "query": "ranking",
+      "query_id": "q045",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 2,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "ambiguous",
+      "ndcg_at_5_delta": -0.09757573065474023,
+      "query": "policy",
+      "query_id": "q046",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 3,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/url-security"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "ambiguous",
+      "ndcg_at_5_delta": -0.15969697161989949,
+      "query": "budget",
+      "query_id": "q047",
+      "recall_at_5_delta": -0.3333333333333333,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 3,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "category": "ambiguous",
+      "ndcg_at_5_delta": 0.39654854979723025,
+      "query": "errors",
+      "query_id": "q048",
+      "recall_at_5_delta": 0.5,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/url-security"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "multi_relevant",
+      "ndcg_at_5_delta": 0.0,
+      "query": "How should timeout, cancellation, and retry delays share ownership of a complete fetch?",
+      "query_id": "q049",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "multi_relevant",
+      "ndcg_at_5_delta": 0.0,
+      "query": "How are concurrency slots, crawl spacing, and robots delay combined for one origin?",
+      "query_id": "q050",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 2,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "category": "multi_relevant",
+      "ndcg_at_5_delta": 0.32756846896185343,
+      "query": "Which checks must run again when an allowed public URL redirects?",
+      "query_id": "q051",
+      "recall_at_5_delta": 0.25,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "multi_relevant",
+      "ndcg_at_5_delta": -0.03519010905885889,
+      "query": "Trace cleaned HTML from structured blocks through chunks into the lexical index.",
+      "query_id": "q052",
+      "recall_at_5_delta": 0.25,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/content-chunking"
+      ],
+      "category": "multi_relevant",
+      "ndcg_at_5_delta": 0.18096433468262252,
+      "query": "How do BM25 ordering, result limits, and token selection produce bounded context?",
+      "query_id": "q053",
+      "recall_at_5_delta": 0.25,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "multi_relevant",
+      "ndcg_at_5_delta": -0.24749897046085945,
+      "query": "How does the command line expose context search without duplicating application logic?",
+      "query_id": "q054",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 4,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "multi_relevant",
+      "ndcg_at_5_delta": -0.1429449597242718,
+      "query": "Compare lifecycle and failure channels for the local tool server and ordinary CLI.",
+      "query_id": "q055",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": 1,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "category": "multi_relevant",
+      "ndcg_at_5_delta": -0.20916494698615462,
+      "query": "How are stable identities preserved across canonical URLs, chunks, and provenance rows?",
+      "query_id": "q056",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": 1,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": null,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/content-chunking"
+      ],
+      "category": "negative",
+      "ndcg_at_5_delta": 0.0,
+      "query": "Kubernetes Helm chart values for the crawler deployment",
+      "query_id": "q057",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": null,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "negative",
+      "ndcg_at_5_delta": 0.0,
+      "query": "Redis vector index configuration and HNSW dimensions",
+      "query_id": "q058",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": null,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "negative",
+      "ndcg_at_5_delta": 0.0,
+      "query": "OAuth device flow client registration",
+      "query_id": "q059",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": null,
+      "bm25_only_sources": [],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/politeness"
+      ],
+      "category": "negative",
+      "ndcg_at_5_delta": 0.0,
+      "query": "WebSocket streaming endpoint heartbeat interval",
+      "query_id": "q060",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/concurrency"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": null,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/url-security"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/async-http",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/url-security",
+        "https://benchmark.crawlforge.local/cli-config"
+      ],
+      "category": "negative",
+      "ndcg_at_5_delta": 0.0,
+      "query": "S3 object versioning and lifecycle retention rules",
+      "query_id": "q061",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/concurrency"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/async-http"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": null,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "category": "negative",
+      "ndcg_at_5_delta": 0.0,
+      "query": "Kafka consumer offset commit strategy",
+      "query_id": "q062",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/retrieval-context"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": null,
+      "bm25_only_sources": [
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "bm25_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/sqlite-search",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/retry-errors",
+        "https://benchmark.crawlforge.local/async-http"
+      ],
+      "category": "negative",
+      "ndcg_at_5_delta": 0.0,
+      "query": "GPU embedding batch size and CUDA memory",
+      "query_id": "q063",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/concurrency",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/mcp-adapter"
+      ]
+    },
+    {
+      "bm25_failure": null,
+      "bm25_first_relevant_rank": null,
+      "bm25_only_sources": [],
+      "bm25_sources": [],
+      "category": "negative",
+      "ndcg_at_5_delta": 0.0,
+      "query": "PDF OCR language pack installation",
+      "query_id": "q064",
+      "recall_at_5_delta": 0.0,
+      "semantic_failure": null,
+      "semantic_first_relevant_rank": null,
+      "semantic_only_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ],
+      "semantic_sources": [
+        "https://benchmark.crawlforge.local/retrieval-context",
+        "https://benchmark.crawlforge.local/content-chunking",
+        "https://benchmark.crawlforge.local/mcp-adapter",
+        "https://benchmark.crawlforge.local/cli-config",
+        "https://benchmark.crawlforge.local/politeness",
+        "https://benchmark.crawlforge.local/sqlite-search"
+      ]
+    }
+  ],
+  "semantic_regressions": [
+    "q002",
+    "q004",
+    "q007",
+    "q011",
+    "q016",
+    "q023",
+    "q027",
+    "q033",
+    "q039",
+    "q040",
+    "q042",
+    "q046",
+    "q047",
+    "q052",
+    "q054",
+    "q055",
+    "q056",
+    "q064"
+  ],
+  "semantic_retrieval_configuration": {
+    "average_tokenized_length": 133.7,
+    "average_vector_bytes_per_chunk": 1536.0,
+    "batch_size": 32,
+    "configured_max_sequence_length": 256,
+    "device": "cpu",
+    "dimension": 384,
+    "document_encoding_time_ms": 1174.973916989984,
+    "document_format_version": "crawlforge-semantic-document-v1",
+    "document_input_count": 50,
+    "embedded_chunks": 50,
+    "embedding_batch_size": 32,
+    "embedding_cache_hits": 0,
+    "embedding_indexing_time_ms": 4855.714042001637,
+    "embeddings_per_second": 42.554136119113714,
+    "exact_scan_complexity": "O(number_of_chunks * embedding_dimension)",
+    "exact_vector_scan_mean_ms": 1.2073461053750245,
+    "failed_embedding_chunks": 0,
+    "index": "sqlite_float32_blob",
+    "invalidated_embeddings": 0,
+    "limit_values": [
+      1,
+      3,
+      5,
+      10
+    ],
+    "loaded_vector_bytes": 76800,
+    "loaded_vector_memory_estimate_bytes": 76800,
+    "maximum_tokenized_length": 199,
+    "model_cache_size_bytes": 183156830,
+    "model_fingerprint": "99c02b0220fea31cf39e42bcaa37882537882fe061c56eb509db6b0cc61090cf",
+    "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "model_load_time_ms": 3664.7277919983026,
+    "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "normalized": true,
+    "precision": "float32",
+    "provenance_materialization_mean_ms": 0.410770630498558,
+    "provider": "sentence-transformers",
+    "query_encoding_mean_ms": 5.307432792643979,
+    "query_format_version": "crawlforge-semantic-query-v1",
+    "ranking": "exact_cosine_similarity",
+    "readiness_check_mean_ms": 0.13422393135513083,
+    "repeat_latency": 5,
+    "score_order": "descending",
+    "score_type": "cosine_similarity",
+    "sentence_transformers_version": "5.6.1",
+    "sqlite_snapshot_fetch_mean_ms": 0.4181883624219984,
+    "sqlite_snapshot_scope": "compatible vectors and complete chunk provenance",
+    "sqlite_vector_write_time_ms": 6.06779201189056,
+    "stored_vector_bytes": 76800,
+    "token_budget": 3000,
+    "torch_version": "2.2.2",
+    "total_semantic_retrieval_mean_ms": 8.56160112669628,
+    "transformers_version": "4.57.6",
+    "truncated_document_fraction": 0.0,
+    "truncated_document_inputs": 0,
+    "vector_decode_mean_ms": 1.0107679205338238,
+    "warmup_calls": 3
+  },
+  "semantic_wins": [
+    "q014",
+    "q029",
+    "q031",
+    "q032",
+    "q034",
+    "q035",
+    "q037",
+    "q038",
+    "q041",
+    "q043",
+    "q044",
+    "q045",
+    "q048",
+    "q051",
+    "q053"
+  ],
+  "uncertainty": [
+    {
+      "bootstrap_samples": 5000,
+      "lower_95": -0.03571428571428571,
+      "mean_delta": 0.017857142857142856,
+      "metric": "Hit@5",
+      "paired_query_count": 56,
+      "seed": 20260729,
+      "upper_95": 0.08928571428571429
+    },
+    {
+      "bootstrap_samples": 5000,
+      "lower_95": -0.05952380952380952,
+      "mean_delta": 0.020833333333333336,
+      "metric": "Recall@5",
+      "paired_query_count": 56,
+      "seed": 20260729,
+      "upper_95": 0.09970238095238096
+    },
+    {
+      "bootstrap_samples": 5000,
+      "lower_95": -0.10664682539682539,
+      "mean_delta": -0.011805555555555554,
+      "metric": "MRR",
+      "paired_query_count": 56,
+      "seed": 20260729,
+      "upper_95": 0.07589533730158726
+    },
+    {
+      "bootstrap_samples": 5000,
+      "lower_95": -0.07367500180097296,
+      "mean_delta": 0.00019113128228709662,
+      "metric": "NDCG@5",
+      "paired_query_count": 56,
+      "seed": 20260729,
+      "upper_95": 0.07206793675358023
+    }
+  ],
+  "warnings": [
+    "Bootstrap intervals are exploratory estimates from a small synthetic dataset.",
+    "Intervals do not establish statistical significance or transferability to real websites.",
+    "Semantic cosine scores are not calibrated confidence and no negative query threshold was fitted."
+  ]
+}

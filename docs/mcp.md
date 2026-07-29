@@ -267,8 +267,9 @@ remote MCP server.
 
 ## Current limits
 
-Retrieval is lexical BM25, not semantic search. There are no embeddings, vector
-database, hybrid retrieval, reranker, answer generation, JavaScript browser
-rendering, prompts, MCP Apps UI, Streamable HTTP, OAuth, remote hosting,
-standalone delete/configuration tools, or background crawl jobs. The local
-Python build must provide SQLite FTS5.
+MCP retrieval is lexical BM25. Optional semantic retrieval is available through
+the Python API and CLI, but it is not exposed as an MCP tool. There is no hybrid
+retrieval, reranker, answer generation, JavaScript browser rendering, prompts,
+MCP Apps UI, Streamable HTTP, OAuth, remote hosting, standalone
+delete/configuration tools, or background crawl jobs. The local Python build
+must provide SQLite FTS5.
