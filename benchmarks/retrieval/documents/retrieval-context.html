@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>BM25 Retrieval and Context Budgets</title>
+</head>
+<body>
+<main>
+  <h1>BM25 Retrieval and Context Budgets</h1>
+  <p>Local lexical retrieval converts a large indexed corpus into a small,
+  auditable set of complete chunks. Ranking, result limits, and context budgets
+  are separate controls and should remain observable.</p>
+
+  <section id="bm25-ranking">
+    <h2>BM25 ranking semantics</h2>
+    <p>SQLite FTS5 returns a BM25 raw score where lower values are better. The
+    search layer therefore orders <code>raw_score ASC</code>; sorting the raw
+    number descending reverses relevance. Stable tie breakers use source
+    identity and chunk position so repeated searches are deterministic.</p>
+    <pre><code>hits = await index.search(query, limit=10)
+# hits[0] has the lowest BM25 raw score</code></pre>
+    <p>BM25 is lexical. It rewards informative term matches but does not prove
+    factual correctness or semantic equivalence. Headings can improve matching
+    because they supply compact section vocabulary.</p>
+  </section>
+
+  <section id="search-limits">
+    <h2>Search limits</h2>
+    <p><code>limit</code> bounds how many ranked hits leave the index. It must
+    be a positive integer and should also have an application maximum. A SQL
+    LIMIT protects result materialization, but query syntax and serialized
+    output still need validation at the boundary.</p>
+    <ul>
+      <li>Use a small default for interactive search.</li>
+      <li>Return the requested and applied limit in metrics when they differ.</li>
+      <li>Do not fetch an unbounded candidate set and slice it in memory.</li>
+    </ul>
+    <p>A search result can carry the complete chunk, BM25 score, title, URL,
+    heading path, and chunk position without exposing internal table details.</p>
+  </section>
+
+  <section id="token-budgets">
+    <h2>Token budgets</h2>
+    <p><code>ContextEngine.build_context()</code> retrieves candidates in
+    relevance order, removes repeated content hashes, and includes only complete
+    chunks that fit the token budget. It never cuts a chunk in the middle merely
+    to fill the last few estimated tokens.</p>
+    <pre><code>if token_budget &lt;= 0:
+    raise ValueError("token_budget must be greater than zero")</code></pre>
+    <p>A chunk larger than the remaining budget is skipped while later smaller
+    chunks may still fit. The result reports estimated tokens, the configured
+    budget, selected sources, and whether the budget limited selection.</p>
+  </section>
+
+  <section id="context-reduction">
+    <h2>Context reduction</h2>
+    <p>Context reduction compares the estimated tokens in selected chunks with
+    the estimated tokens in the indexed source material. It is a reproducible
+    size metric, not a claim about answer quality. A high reduction can still
+    omit the only relevant section if ranking is poor.</p>
+    <p>Evaluate retrieval with section-level judgments, graded relevance, and
+    negative queries in addition to reduction. Provenance makes every selected
+    chunk auditable. The useful outcome is a bounded context that is smaller
+    than the corpus while retaining the passages needed for the query.</p>
+  </section>
+</main>
+</body>
+</html>

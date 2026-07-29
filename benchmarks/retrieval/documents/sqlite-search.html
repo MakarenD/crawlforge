@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SQLite FTS5 Index Design</title>
+</head>
+<body>
+<main>
+  <h1>SQLite FTS5 Index Design</h1>
+  <p>A retrieval index has different ownership and update semantics from an
+  append-only crawl archive. Keeping those stores separate makes migration,
+  replacement, and lexical ranking explicit.</p>
+
+  <section id="storage-separation">
+    <h2>Storage separation</h2>
+    <p><code>SQLiteStorage</code> preserves crawl records for later inspection;
+    it is not a search index. <code>SQLiteContextIndex</code> owns normalized
+    documents, chunks, provenance, and the FTS5 projection used by retrieval.
+    Re-indexing a page may replace stale chunks without rewriting the crawl
+    archive.</p>
+    <ul>
+      <li>The archive answers “what was crawled?”</li>
+      <li>The context index answers “which complete chunk matches this query?”</li>
+      <li>Shared SQLite technology does not make the two schemas interchangeable.</li>
+    </ul>
+    <p>This boundary also allows JSON or asynchronous text archives to feed the
+    same local retrieval index.</p>
+  </section>
+
+  <section id="fts5-table">
+    <h2>FTS5 virtual table</h2>
+    <p>The <code>chunk_fts</code> FTS5 virtual table indexes title, heading
+    text, and chunk content. Metadata and authoritative source rows remain in
+    ordinary tables. Search joins an FTS row back to its chunk rather than
+    treating the virtual table as the source of provenance.</p>
+    <pre><code>SELECT chunk_id, bm25(chunk_fts) AS raw_score
+FROM chunk_fts
+WHERE chunk_fts MATCH ?
+ORDER BY raw_score ASC
+LIMIT ?;</code></pre>
+    <p>If SQLite lacks the extension, initialization raises
+    <code>FTS5UnavailableError</code> with a concise corrective message.
+    Silently falling back to substring scanning would change relevance and
+    performance semantics.</p>
+  </section>
+
+  <section id="schema-migrations">
+    <h2>Schema migrations</h2>
+    <p>A small <code>context_schema_version</code> table records the installed
+    schema. Migration from version 1 to version 2 runs inside a transaction,
+    creates new structures, backfills materialized provenance, verifies
+    required rows, and advances the version only after success.</p>
+    <pre><code>BEGIN IMMEDIATE;
+-- create, copy, verify
+UPDATE context_schema_version SET version = 2;
+COMMIT;</code></pre>
+    <p>An unknown future version is rejected instead of guessed. A failed
+    migration rolls back so the previous readable schema remains intact; a
+    second startup can retry deterministically.</p>
+  </section>
+
+  <section id="transactions-provenance">
+    <h2>Transactions and provenance</h2>
+    <p>Batch indexing writes document content, chunk rows, FTS entries, and
+    <code>chunk_provenance</code> in one transaction. Either the new document
+    view is complete or none of it becomes visible. Content hashes deduplicate
+    identical chunk text while provenance keeps every source URL and heading
+    path that produced it.</p>
+    <p>Readers should never observe an FTS match whose source row has already
+    been deleted. Foreign keys, deterministic deletion order, and a single
+    transaction protect that invariant. A locked database is reported to the
+    caller; it is not “fixed” by dropping tables or discarding history.</p>
+  </section>
+</main>
+</body>
+</html>

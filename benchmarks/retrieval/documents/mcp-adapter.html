@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Local MCP Adapter Operations</title>
+</head>
+<body>
+<main>
+  <h1>Local MCP Adapter Operations</h1>
+  <p>The local MCP adapter is a bounded transport around the existing context
+  application service. It does not own a second retrieval engine and does not
+  turn retrieved web text into trusted instructions.</p>
+
+  <section id="stable-tools">
+    <h2>Stable tools</h2>
+    <p>The adapter registers exactly four stable tools:
+    <code>index_site</code>, <code>search_index</code>,
+    <code>build_context</code>, and <code>get_index_info</code>. Each tool has
+    validated arguments and an immutable structured output model.</p>
+    <ul>
+      <li><code>index_site</code> crawls and indexes within configured caps.</li>
+      <li><code>search_index</code> returns ranked chunks with provenance.</li>
+      <li><code>build_context</code> returns a token-budgeted chunk set.</li>
+      <li><code>get_index_info</code> reports local index metadata.</li>
+    </ul>
+    <p><code>ServerRuntime</code> adapts these calls to
+    <code>ContextEngine</code> and owns operation tracking.</p>
+  </section>
+
+  <section id="stdio-lifecycle">
+    <h2>Stdio lifecycle</h2>
+    <p>The server runs locally over stdio. Standard output is reserved for MCP
+    protocol messages; lifecycle logs and diagnostics go to standard error.
+    Startup validates immutable <code>MCPServerConfig</code>, opens the database
+    boundary, and reports a safe degraded state for expected index problems.</p>
+    <pre><code>uv run crawlforge-mcp --database .crawlforge/index.db</code></pre>
+    <p>Shutdown stops accepting new operations, waits for or cancels tracked
+    operations, closes the runtime, and then releases server resources. The
+    lifecycle context has one owner and <code>close()</code> is idempotent.</p>
+  </section>
+
+  <section id="tool-errors">
+    <h2>Tool errors</h2>
+    <p>Malformed arguments remain protocol validation errors. Expected
+    execution failures become <code>ToolExecutionError</code> results with a
+    short corrective message. Unexpected exceptions are logged with operator
+    detail but returned without stack traces, database internals, or local
+    filesystem locations.</p>
+    <pre><code>ToolExecutionError(
+    "the MCP server is shutting down; retry after restarting it"
+)</code></pre>
+    <p>Running the console entry point without the optional dependency reports
+    “CrawlForge MCP support is not installed” and exits with status 2. Tool
+    failures never write an ordinary result that merely looks successful.</p>
+  </section>
+
+  <section id="output-safety">
+    <h2>Output and content safety</h2>
+    <p>Configured limits bound crawl pages, search hits, token budgets, operation
+    concurrency, serialized bytes, and text field lengths. Output truncation is
+    structured and observable; it does not produce invalid protocol messages.
+    Returned URL and heading fields remain provenance.</p>
+    <p>Retrieved chunks are untrusted web content. Text that says “ignore prior
+    rules” is indexed as data and must never be treated as an MCP instruction,
+    server policy, or system message. Network policy blocks private targets by
+    default for indexing operations, including redirect and DNS destinations.</p>
+  </section>
+</main>
+</body>
+</html>

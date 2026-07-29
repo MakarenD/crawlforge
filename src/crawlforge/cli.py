@@ -9,6 +9,7 @@ import sqlite3
 from collections.abc import Sequence
 from dataclasses import asdict, replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from crawlforge import __version__
 from crawlforge.advanced import AdvancedCrawler
@@ -16,6 +17,20 @@ from crawlforge.config import CrawlerConfig, LoggingConfig, ReportConfig
 from crawlforge.context_engine import ContextEngine
 from crawlforge.context_models import ContextResult, IndexingResult, SearchHit
 from crawlforge.logging_config import configure_logging
+
+if TYPE_CHECKING:
+    from crawlforge.evaluation.models import EvaluationDataset, EvaluationRun
+
+_EVALUATION_CATEGORIES = (
+    "exact_term",
+    "code_symbol",
+    "error_lookup",
+    "paraphrase",
+    "conceptual",
+    "ambiguous",
+    "multi_relevant",
+    "negative",
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -96,7 +111,10 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="console and file logging level",
     )
-    commands = parser.add_subparsers(dest="command", metavar="{index,search}")
+    commands = parser.add_subparsers(
+        dest="command",
+        metavar="{index,search,evaluate}",
+    )
     index_parser = commands.add_parser(
         "index",
         help="crawl a site into a local lexical context index",
@@ -152,6 +170,92 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="write machine-readable output to stdout",
     )
+
+    evaluate_parser = commands.add_parser(
+        "evaluate",
+        help="run or validate deterministic retrieval evaluations",
+    )
+    evaluate_commands = evaluate_parser.add_subparsers(
+        dest="evaluate_command",
+        required=True,
+        metavar="{run,validate}",
+    )
+    evaluate_run_parser = evaluate_commands.add_parser(
+        "run",
+        help="build a clean local index and evaluate retrieval",
+    )
+    evaluate_run_parser.add_argument(
+        "--dataset",
+        type=Path,
+        default=None,
+        help="versioned offline evaluation dataset (default: bundled baseline)",
+    )
+    evaluate_run_parser.add_argument(
+        "--database",
+        type=Path,
+        default=Path(".crawlforge/evaluation.db"),
+        help="disposable SQLite evaluation index",
+    )
+    evaluate_run_parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="evaluation report path",
+    )
+    evaluate_run_parser.add_argument(
+        "--format",
+        choices=("json", "markdown"),
+        default="json",
+        help="report serialization format",
+    )
+    evaluate_run_parser.add_argument(
+        "--limit-values",
+        default="1,3,5,10",
+        help="comma-separated retrieval metric cutoffs",
+    )
+    evaluate_run_parser.add_argument(
+        "--token-budget",
+        type=int,
+        default=3000,
+        help="approximate context token budget",
+    )
+    evaluate_run_parser.add_argument(
+        "--repeat-latency",
+        type=int,
+        default=5,
+        help="warm-index timing repetitions per query",
+    )
+    evaluate_run_parser.add_argument(
+        "--category",
+        choices=_EVALUATION_CATEGORIES,
+        help="evaluate only one validated query category",
+    )
+    evaluate_run_parser.add_argument(
+        "--query-id",
+        action="append",
+        help="evaluate one query ID; may be repeated",
+    )
+    evaluate_run_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="write the concise run summary as JSON to stdout",
+    )
+
+    evaluate_validate_parser = evaluate_commands.add_parser(
+        "validate",
+        help="validate dataset structure and relevance references",
+    )
+    evaluate_validate_parser.add_argument(
+        "--dataset",
+        type=Path,
+        default=None,
+        help="versioned offline evaluation dataset (default: bundled baseline)",
+    )
+    evaluate_validate_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="write the validation summary as JSON to stdout",
+    )
     return parser
 
 
@@ -185,6 +289,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.error(str(error))
         _print_context_result(context, json_output=arguments.json)
         return 0
+    if arguments.command == "evaluate":
+        try:
+            if arguments.evaluate_command == "validate":
+                _validate_evaluation_dataset(arguments)
+                return 0
+            return _execute_evaluation(arguments)
+        except (OSError, RuntimeError, sqlite3.Error, TypeError, ValueError) as error:
+            parser.error(str(error))
     if arguments.urls is None and arguments.config is None:
         parser.print_help()
         return 0
@@ -237,6 +349,239 @@ async def _run_search(arguments: argparse.Namespace) -> ContextResult:
             limit=arguments.limit,
             token_budget=arguments.token_budget,
         )
+
+
+def _validate_evaluation_dataset(arguments: argparse.Namespace) -> None:
+    from crawlforge.evaluation.dataset import load_dataset
+
+    dataset = load_dataset(_evaluation_dataset_path(arguments.dataset))
+    category_counts = {
+        category: sum(query.category == category for query in dataset.queries)
+        for category in _EVALUATION_CATEGORIES
+    }
+    payload = {
+        "valid": True,
+        "dataset": dataset.name,
+        "version": dataset.version,
+        "documents": len(dataset.documents),
+        "sections": sum(len(document.sections) for document in dataset.documents),
+        "queries": len(dataset.queries),
+        "categories": category_counts,
+    }
+    if arguments.json:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        return
+    print(
+        f"Dataset {dataset.name} {dataset.version} is valid: "
+        f"{len(dataset.documents)} documents, "
+        f"{payload['sections']} sections, "
+        f"{len(dataset.queries)} queries."
+    )
+
+
+def _execute_evaluation(arguments: argparse.Namespace) -> int:
+    from crawlforge.evaluation.dataset import filter_dataset, load_dataset
+    from crawlforge.evaluation.reporting import write_evaluation_report
+
+    complete_dataset = load_dataset(_evaluation_dataset_path(arguments.dataset))
+    dataset = filter_dataset(
+        complete_dataset,
+        category=arguments.category,
+        query_ids=(frozenset(arguments.query_id) if arguments.query_id else None),
+    )
+    limits = _parse_limit_values(arguments.limit_values)
+    database: Path = arguments.database
+    output = _evaluation_output_path(
+        arguments,
+        dataset=complete_dataset,
+        limits=limits,
+    )
+    _prepare_evaluation_paths(
+        dataset=complete_dataset,
+        database=database,
+        output=output,
+    )
+    evaluation = asyncio.run(
+        _run_retrieval_evaluation(
+            dataset=dataset,
+            database=database,
+            limits=limits,
+            token_budget=arguments.token_budget,
+            repeat_latency=arguments.repeat_latency,
+        )
+    )
+    write_evaluation_report(
+        evaluation,
+        output,
+        report_format=arguments.format,
+    )
+    _print_evaluation_summary(
+        evaluation,
+        output=output,
+        json_output=arguments.json,
+    )
+    return 1 if evaluation.failures else 0
+
+
+def _evaluation_output_path(
+    arguments: argparse.Namespace,
+    *,
+    dataset: EvaluationDataset,
+    limits: tuple[int, ...],
+) -> Path:
+    configured_output: Path | None = arguments.output
+    if configured_output is not None:
+        return configured_output
+
+    is_canonical_baseline = (
+        arguments.dataset is None
+        and arguments.category is None
+        and not arguments.query_id
+        and dataset.name == "crawlforge-retrieval-baseline"
+        and dataset.version == "1.0.0"
+        and limits == (1, 3, 5, 10)
+        and arguments.token_budget == 3000
+        and arguments.repeat_latency == 5
+    )
+    if not is_canonical_baseline:
+        raise ValueError(
+            "custom or filtered evaluations require an explicit --output path"
+        )
+    return Path(
+        "reports/bm25-baseline." + ("json" if arguments.format == "json" else "md")
+    )
+
+
+def _evaluation_dataset_path(configured: Path | None) -> Path:
+    if configured is not None:
+        return configured
+
+    source_dataset = Path(__file__).resolve().parents[2] / "benchmarks" / "retrieval"
+    if (source_dataset / "manifest.json").is_file():
+        return source_dataset
+
+    from importlib.resources import files
+
+    bundled = files("crawlforge.evaluation").joinpath("data", "retrieval")
+    bundled_path = Path(str(bundled))
+    if not (bundled_path / "manifest.json").is_file():
+        raise RuntimeError(
+            "bundled evaluation dataset is unavailable; provide --dataset"
+        )
+    return bundled_path
+
+
+async def _run_retrieval_evaluation(
+    *,
+    dataset: EvaluationDataset,
+    database: Path,
+    limits: tuple[int, ...],
+    token_budget: int,
+    repeat_latency: int,
+) -> EvaluationRun:
+    from crawlforge.chunking import ChunkingConfig, TextChunker
+    from crawlforge.evaluation.runner import (
+        BM25ContextEngineStrategy,
+        RetrievalEvaluationRunner,
+        ingest_evaluation_corpus,
+    )
+
+    chunking = ChunkingConfig()
+    async with ContextEngine(
+        database,
+        chunker=TextChunker(config=chunking),
+    ) as engine:
+        corpus_statistics = await ingest_evaluation_corpus(engine, dataset)
+        strategy = BM25ContextEngineStrategy(engine, dataset)
+        runner = RetrievalEvaluationRunner(
+            dataset=dataset,
+            retriever=strategy,
+            corpus_statistics=corpus_statistics,
+            retrieval_configuration={
+                "index": "sqlite_fts5",
+                "ranking": "bm25",
+                "score_order": "ascending",
+            },
+            chunking_configuration=asdict(chunking),
+        )
+        return await runner.run(
+            limits=limits,
+            token_budget=token_budget,
+            repeat_latency=repeat_latency,
+        )
+
+
+def _prepare_evaluation_paths(
+    *,
+    dataset: EvaluationDataset,
+    database: Path,
+    output: Path,
+) -> None:
+    dataset_root = dataset.root.resolve()
+    database_path = database.resolve()
+    output_path = output.resolve()
+    database_namespace = (
+        database_path,
+        Path(f"{database_path}-wal"),
+        Path(f"{database_path}-shm"),
+        Path(f"{database_path}-journal"),
+    )
+    if output_path in database_namespace:
+        raise ValueError(
+            "evaluation report output conflicts with evaluation database files"
+        )
+    if database_path.is_relative_to(dataset_root):
+        raise ValueError("evaluation database must be outside the dataset")
+    if output_path.is_relative_to(dataset_root):
+        raise ValueError("evaluation report must be outside the dataset")
+
+    database.parent.mkdir(parents=True, exist_ok=True)
+    for candidate in database_namespace:
+        candidate.unlink(missing_ok=True)
+
+
+def _parse_limit_values(value: str) -> tuple[int, ...]:
+    try:
+        limits = tuple(
+            sorted({int(item.strip()) for item in value.split(",") if item.strip()})
+        )
+    except ValueError as error:
+        raise ValueError("limit-values must be comma-separated integers") from error
+    if not limits or limits[0] <= 0:
+        raise ValueError("limit-values must contain positive integers")
+    return limits
+
+
+def _print_evaluation_summary(
+    evaluation: EvaluationRun,
+    *,
+    output: Path,
+    json_output: bool,
+) -> None:
+    metrics = evaluation.aggregate_metrics
+    focus_limit = 5 if 5 in metrics.hit_rate_at else max(metrics.hit_rate_at)
+    payload = {
+        "dataset": evaluation.dataset_name,
+        "version": evaluation.dataset_version,
+        "strategy": evaluation.retrieval_strategy,
+        "queries": metrics.query_count,
+        f"hit_rate_at_{focus_limit}": metrics.hit_rate_at[focus_limit],
+        "mrr": metrics.mrr,
+        "no_result_accuracy": metrics.no_result_accuracy,
+        "failures": len(evaluation.failures),
+        "report": str(output),
+    }
+    if json_output:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        return
+    print(
+        f"Evaluated {metrics.query_count} queries with {evaluation.retrieval_strategy}."
+    )
+    print(
+        f"Hit Rate@{focus_limit}: {metrics.hit_rate_at[focus_limit]:.1%}; "
+        f"MRR: {metrics.mrr:.4f}."
+    )
+    print(f"Report: {output}")
 
 
 def _print_index_result(result: IndexingResult, *, json_output: bool) -> None:

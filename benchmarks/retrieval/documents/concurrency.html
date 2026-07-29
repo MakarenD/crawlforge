@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Bounded Concurrency and Cancellation</title>
+</head>
+<body>
+<main>
+  <h1>Bounded Concurrency and Cancellation</h1>
+  <p>Crawl throughput comes from overlapping independent waits, but every layer
+  still needs a finite capacity. Bounded concurrency protects file descriptors,
+  remote origins, memory, and cancellation latency.</p>
+
+  <section id="semaphore-hierarchy">
+    <h2>Semaphore hierarchy</h2>
+    <p><code>SemaphoreManager</code> combines a global semaphore with
+    per-domain semaphores. A task must hold both capacities before issuing a
+    network request. The order is stable for every task so that two requests do
+    not acquire the same locks in opposite order.</p>
+    <pre><code>async with semaphore_manager.limit(url):
+    response = await request(url)</code></pre>
+    <p>Hostname keys are canonicalized before lookup: case, trailing dots,
+    Unicode IDNA spelling, and default ports must not create independent domain
+    buckets. Inactive per-domain limiters can be removed only when no task owns
+    or waits on them.</p>
+  </section>
+
+  <section id="rolling-scheduler">
+    <h2>Rolling scheduler</h2>
+    <p>A rolling scheduler fills a fixed worker window, waits with
+    <code>asyncio.FIRST_COMPLETED</code>, processes completed tasks, and then
+    refills the window. It does not materialize one task for every discovered
+    URL. Therefore a million queued links do not become a million live task
+    objects.</p>
+    <pre><code>done, pending = await asyncio.wait(
+    active,
+    return_when=asyncio.FIRST_COMPLETED,
+)</code></pre>
+    <p>Refill occurs after results enqueue newly discovered links. The active
+    set and queue size are separate limits: one bounds executing work and the
+    other bounds retained future work.</p>
+  </section>
+
+  <section id="cancellation-cleanup">
+    <h2>Cancellation cleanup</h2>
+    <p>When the parent crawl is cancelled, it first cancels active child tasks,
+    then awaits them with exceptions collected, and finally closes owned
+    network resources. Awaiting cancelled children is required; merely calling
+    <code>task.cancel()</code> can leave response contexts and semaphore permits
+    pending.</p>
+    <pre><code>for task in active:
+    task.cancel()
+await asyncio.gather(*active, return_exceptions=True)
+raise</code></pre>
+    <p>Cleanup should be shielded only for the smallest indispensable release
+    operation. Broad shielding makes a cancelled crawl continue doing useful
+    work after its caller has left.</p>
+  </section>
+
+  <section id="queue-transitions">
+    <h2>Queue state transitions</h2>
+    <p><code>CrawlerQueue</code> tracks a URL through explicit states such as
+    queued, in progress, completed, failed, or deferred. Deduplication happens
+    before enqueue, while a retry or politeness delay may defer an already known
+    item without pretending it completed.</p>
+    <ul>
+      <li>Only a queued item can become in progress.</li>
+      <li>A completed identity is not scheduled again.</li>
+      <li>Cancellation returns unfinished ownership to a recoverable state.</li>
+    </ul>
+    <p>Priority and FIFO sequence numbers make ties deterministic. Queue
+    statistics should derive from these transitions rather than from unrelated
+    task callbacks.</p>
+  </section>
+</main>
+</body>
+</html>

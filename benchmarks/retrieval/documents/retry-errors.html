@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Retries, Errors, and Backoff</title>
+</head>
+<body>
+<main>
+  <h1>Retries, Errors, and Backoff</h1>
+  <p>Retries are a policy for specific temporary failures, not a generic loop
+  around every exception. A sound policy preserves the final error and limits
+  the extra load it creates.</p>
+
+  <section id="error-taxonomy">
+    <h2>Error taxonomy</h2>
+    <p><code>RetryStrategy</code> distinguishes
+    <code>TransientError</code> from <code>PermanentError</code>. Connection
+    resets, selected server failures, and HTTP 429 can be transient. Invalid
+    URLs, disallowed network targets, parsing contracts, and ordinary HTTP 4xx
+    responses are permanent unless an explicit rule says otherwise.</p>
+    <pre><code>if isinstance(error, PermanentError):
+    raise error
+if attempt == max_retries:
+    raise error</code></pre>
+    <p><code>ParseError</code> should not be silently reclassified as a network
+    failure. The category controls retry behavior and gives operators a stable
+    failure reason.</p>
+  </section>
+
+  <section id="exponential-backoff">
+    <h2>Exponential backoff</h2>
+    <p>Exponential backoff grows a base delay by the attempt number and caps the
+    result. Jitter spreads clients that failed at the same moment. A typical
+    calculation is <code>min(max_delay, base_delay * 2 ** attempt)</code> plus a
+    bounded random component.</p>
+    <ul>
+      <li>The first attempt has no retry sleep.</li>
+      <li>The attempt counter advances only after a failed request.</li>
+      <li>Cancellation during sleep stops the retry loop immediately.</li>
+    </ul>
+    <p>The retry loop shares the whole-operation timeout budget. Backoff does
+    not grant a new unlimited deadline.</p>
+  </section>
+
+  <section id="retry-after">
+    <h2>Retry-After handling</h2>
+    <p>For HTTP 429, a valid <code>Retry-After</code> header can specify either
+    delta seconds or an HTTP date. The crawler waits for at least that server
+    delay, subject to its configured cap and remaining operation deadline.
+    Ordinary exponential backoff still supplies a floor when the header is
+    absent.</p>
+    <pre><code>Retry-After: 7</code></pre>
+    <p>An invalid or past Retry-After value is ignored and the normal backoff is
+    used. Negative delays never move the monotonic schedule backward. Header
+    parsing errors remain local policy details rather than new crawl failures.</p>
+  </section>
+
+  <section id="retry-observability">
+    <h2>Retry observability</h2>
+    <p><code>ErrorRecord</code> and <code>RetryStats</code> should capture the
+    request category, attempt count, chosen delay, and final disposition without
+    logging response bodies or credentials. The last meaningful error is more
+    useful than a generic “retries exhausted” wrapper.</p>
+    <ul>
+      <li>Count retries separately from initial requests.</li>
+      <li>Record whether Retry-After changed the delay.</li>
+      <li>Expose terminal and recovered failures independently.</li>
+    </ul>
+    <p>Metrics explain load and latency, while structured errors explain what
+    the caller can correct.</p>
+  </section>
+</main>
+</body>
+</html>

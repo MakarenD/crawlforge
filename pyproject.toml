@@ -50,6 +50,9 @@ crawlforge-mcp = "crawlforge.mcp.cli:main"
 [tool.hatch.version]
 path = "src/crawlforge/__init__.py"
 
+[tool.hatch.build.targets.wheel.force-include]
+"benchmarks/retrieval" = "crawlforge/evaluation/data/retrieval"
+
 [tool.pytest.ini_options]
 addopts = "-ra"
 asyncio_mode = "strict"

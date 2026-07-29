@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CLI, Configuration, and Storage</title>
+</head>
+<body>
+<main>
+  <h1>CLI, Configuration, and Storage</h1>
+  <p>A command-line interface should adapt inputs and outputs while application
+  services own crawling, indexing, and retrieval. Configuration precedence and
+  error channels are public behavior.</p>
+
+  <section id="cli-commands">
+    <h2>Command boundaries</h2>
+    <p>The flat crawl command remains compatible with existing URL and config
+    flags. The <code>crawlforge index</code> subcommand crawls a site into a
+    local context database, while <code>crawlforge search</code> queries an
+    existing database. CLI code parses values and serializes results; it does
+    not reimplement <code>ContextEngine</code>.</p>
+    <pre><code>crawlforge index https://docs.example.test \
+  --database .crawlforge/index.db --max-pages 100
+crawlforge search "retry policy" \
+  --database .crawlforge/index.db --limit 5</code></pre>
+    <p>Help output describes only available behavior and exits without opening
+    storage or making network requests.</p>
+  </section>
+
+  <section id="config-precedence">
+    <h2>Configuration precedence</h2>
+    <p>Explicit command-line flags override values loaded from a configuration
+    file; omitted flags retain file values; remaining fields use documented
+    defaults. Validation happens after merging so an invalid effective timeout,
+    concurrency, domain rule, or output path produces one precise error.</p>
+    <ul>
+      <li>CLI value: highest precedence.</li>
+      <li>Configuration file value: middle precedence.</li>
+      <li>Built-in default: lowest precedence.</li>
+    </ul>
+    <p>Sensitive values are not echoed in diagnostics. Relative paths are
+    resolved according to the command’s documented working-directory contract.</p>
+  </section>
+
+  <section id="storage-backends">
+    <h2>Storage backends</h2>
+    <p><code>DataStorage</code> defines the crawl-record boundary.
+    <code>JSONStorage</code>, <code>SQLiteStorage</code>, and asynchronous text
+    storage preserve crawl output with backend-specific durability. They are
+    separate from <code>SQLiteContextIndex</code>, which supports FTS5 search
+    and replaceable document chunks.</p>
+    <p>Storage resources have explicit open, flush, and close ownership. A
+    partial write must not be reported as a complete crawl record. The CLI
+    closes the selected backend on success, expected failure, and cancellation.</p>
+  </section>
+
+  <section id="cli-errors">
+    <h2>Error and output channels</h2>
+    <p>Machine-readable JSON is written to standard output. Logs, warnings, and
+    actionable diagnostics are written to standard error. Expected failures
+    such as a missing database, corrupt schema, <code>database is locked</code>,
+    invalid limit, or unavailable FTS5 exit with status 2 and no traceback.</p>
+    <pre><code>$ crawlforge search "timeouts" --database missing.db
+error: context database does not exist
+# exit status: 2</code></pre>
+    <p>Unexpected internal errors retain diagnostic context for operators, but
+    ordinary users should not receive secrets or raw storage internals. A
+    failed command must not emit plausible success JSON.</p>
+  </section>
+</main>
+</body>
+</html>
