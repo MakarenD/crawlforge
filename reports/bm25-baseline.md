@@ -4,9 +4,10 @@
 
 - Name: `crawlforge-retrieval-baseline`
 - Version: `1.0.0`
+- Signature: `bb1bf9a8b79f7b47f2850aac362f144d7984196648f592716c7e0d33ff00acfd`
 - Retrieval strategy: `bm25-fts5`
 - Queries: 64
-- Timestamp: `2026-07-29T13:13:53.636111+00:00`
+- Timestamp: `2026-07-29T14:49:42.794465+00:00`
 
 ## Corpus statistics
 
@@ -19,13 +20,23 @@
 | Cleaned bytes | 25641 |
 | Approximate source tokens | 8407 |
 | Approximate cleaned tokens | 6406 |
-| Corpus processing and indexing | 26.670 ms |
+| Corpus processing and indexing | 26.965 ms |
 
 ## Chunking configuration
 
 - `max_chars`: `1600`
 - `overlap_chars`: `160`
 - `target_chars`: `1200`
+
+## Retrieval configuration
+
+- `index`: `"sqlite_fts5"`
+- `limit_values`: `[1,3,5,10]`
+- `ranking`: `"bm25"`
+- `repeat_latency`: `5`
+- `score_order`: `"ascending"`
+- `token_budget`: `3000`
+- `warmup_calls`: `3`
 
 ## Standard retrieval metrics
 
@@ -135,7 +146,7 @@ Indexing is excluded. These timings are machine-specific and are not a portable 
 
 | Samples | Repeats/query | Warm-ups | Mean | Median | P95 | Maximum |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 320 | 5 | 3 | 0.507 ms | 0.495 ms | 0.852 ms | 2.388 ms |
+| 320 | 5 | 3 | 0.454 ms | 0.481 ms | 0.686 ms | 3.928 ms |
 
 ## CrawlForge-specific context efficiency
 
@@ -154,7 +165,7 @@ These project-specific measurements describe approximate bounded context, not st
 
 - The corpus and judgments are small, synthetic, and designed for transparent regression analysis rather than broad external validity.
 - Relevance matching uses stable document, canonical source, section, heading, and optional evidence checks; it does not infer semantics.
-- Negative-query abstention is strict because raw SQLite FTS5 BM25 scores are not calibrated confidence values.
+- Negative-query abstention is strict because retrieval scores are not calibrated confidence values.
 - Token counts use CrawlForge's deterministic character heuristic and are not exact for a particular model.
 - Retrieval quality does not measure generated-answer correctness, faithfulness, or usefulness.
 - Warning: Latency values are warm-index measurements for this machine only.

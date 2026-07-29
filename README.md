@@ -12,10 +12,11 @@ CrawlForge is a local-first web-context engine for AI agents.
 AI agents often receive complete HTML pages containing navigation, scripts,
 repeated layout blocks, and irrelevant sections. CrawlForge performs
 deterministic processing locally and returns a bounded set of source-linked
-chunks ranked for relevance. Retrieval remains lexical and can include
-irrelevant candidates; the checked baseline below makes those limitations
-visible. The same pipeline is available through Python, the CLI, or a local MCP
-stdio server.
+chunks ranked for relevance. BM25 is the default; optional local semantic
+retrieval uses pinned Sentence Transformers embeddings and exact cosine search.
+The checked baselines below make both strategies' limitations visible. Python
+and the CLI support both strategies, while the local MCP stdio server remains
+lexical.
 
 ## How it works
 
@@ -25,7 +26,10 @@ flowchart LR
     B --> C[Clean and normalize]
     C --> D[Heading-aware chunks]
     D --> E[SQLite FTS5 / BM25]
+    D --> H[Optional float32 embeddings]
+    H --> I[Exact cosine search]
     E --> F[Token-budgeted context]
+    I --> F
     F --> G[Python / CLI / MCP]
 ```
 
@@ -41,6 +45,7 @@ to an external retrieval service.
 - robots.txt enforcement, rate limiting, and bounded retries
 - Deterministic content cleaning and heading-aware chunking
 - Local deduplicated SQLite FTS5/BM25 index
+- Optional local Sentence Transformers embeddings and exact cosine retrieval
 - Token-budgeted context with source provenance
 - Local MCP stdio integration with bounded typed outputs
 - Deterministic offline retrieval evaluation
@@ -50,7 +55,7 @@ to an external retrieval service.
 After [installing from source](#installation), index a documentation site:
 
 ```bash
-crawlforge index https://example.com/docs \
+uv run crawlforge index https://example.com/docs \
   --database .crawlforge/index.db \
   --max-pages 100 \
   --max-depth 2
@@ -59,7 +64,7 @@ crawlforge index https://example.com/docs \
 Search the local index and select complete chunks within the token estimate:
 
 ```bash
-crawlforge search "How are retries configured?" \
+uv run crawlforge search "How are retries configured?" \
   --database .crawlforge/index.db \
   --limit 5 \
   --token-budget 3000
@@ -95,14 +100,46 @@ Include the optional MCP SDK integration when needed:
 uv sync --extra mcp
 ```
 
+Install the local semantic runtime separately when needed:
+
+```bash
+uv sync --extra semantic
+```
+
 Editable pip installation is also supported:
 
 ```bash
 python -m pip install -e .
 python -m pip install -e ".[mcp]"
+python -m pip install -e ".[semantic]"
 ```
 
 CrawlForge requires Python 3.12 or newer and a Python SQLite build with FTS5.
+The base package never imports the ML stack. On Intel macOS, the current
+upstream PyTorch wheels limit the semantic extra to Python 3.12; the base
+package remains supported on Python 3.12–3.14.
+
+## Optional semantic retrieval
+
+Build embeddings after the lexical index exists, then opt into semantic search:
+
+```bash
+uv run --extra semantic crawlforge embed \
+  --database .crawlforge/index.db \
+  --device cpu
+
+uv run --extra semantic crawlforge search \
+  "How does the crawler avoid overwhelming a host?" \
+  --database .crawlforge/index.db \
+  --strategy semantic \
+  --limit 5
+```
+
+The default model is pinned to an immutable
+`sentence-transformers/all-MiniLM-L6-v2` revision. Vectors remain in the local
+SQLite index as normalized float32 blobs; model files stay in the normal model
+cache. See [Semantic retrieval](docs/semantic-retrieval.md) for the Python API,
+cache invalidation, storage and latency costs, and score limitations.
 
 ## MCP integration
 
@@ -156,36 +193,37 @@ judgments. The current baseline contains 10 original HTML documents, 40 stable
 sections, 50 indexed chunks, 64 queries, 114 positive judgments, and 8 query
 categories.
 
-Aggregate BM25 results from the current
-[JSON report](reports/bm25-baseline.json):
+Aggregate results from the current frozen-dataset
+[paired report](reports/bm25-vs-semantic.md):
 
-| Metric | BM25 baseline |
-| --- | ---: |
-| Hit Rate@5 | 96.4% |
-| Precision@5 | 28.9% |
-| Recall@5 | 80.2% |
-| MRR | 0.8681 |
-| MAP@5 | 0.7294 |
-| NDCG@5 | 0.8100 |
-
-Selected category results:
-
-| Category | Hit@5 | Recall@5 | MRR |
+| Metric | BM25 | Semantic | Delta |
 | --- | ---: | ---: | ---: |
-| Exact term | 100.0% | 100.0% | 1.0000 |
-| Code symbol | 100.0% | 100.0% | 1.0000 |
-| Paraphrase | 87.5% | 81.2% | 0.7639 |
-| Conceptual | 100.0% | 81.2% | 0.7083 |
-| Ambiguous | 87.5% | 40.6% | 0.6667 |
+| Hit Rate@5 | 96.4% | 98.2% | +1.8 pp |
+| Recall@5 | 80.2% | 82.3% | +2.1 pp |
+| MRR | 0.8681 | 0.8563 | -0.0118 |
+| NDCG@5 | 0.8100 | 0.8102 | +0.0002 |
+| Negative no-result accuracy | 12.5% | 0.0% | -12.5 pp |
 
-Exact terms and code symbols are strong on this corpus. Paraphrases and short
-ambiguous queries are harder, and strict negative-query no-result accuracy is
-only 12.5%. This dataset is small and synthetic; it is useful for deterministic
-regression analysis, not broad external validity. Raw FTS5 BM25 scores are not
-calibrated confidence values, token counts are model-agnostic estimates, and
-latency depends on the machine.
+Selected category MRR:
 
-See the complete [Markdown report](reports/bm25-baseline.md) and
+| Category | BM25 | Semantic | Delta |
+| --- | ---: | ---: | ---: |
+| Exact term | 1.0000 | 0.8125 | -0.1875 |
+| Code symbol | 1.0000 | 0.8438 | -0.1562 |
+| Paraphrase | 0.7639 | 0.8542 | +0.0903 |
+| Conceptual | 0.7083 | 0.9062 | +0.1979 |
+| Ambiguous | 0.6667 | 0.6708 | +0.0042 |
+
+Semantic retrieval improved paraphrase and conceptual queries but regressed
+exact terms, code symbols, aggregate MRR, and strict negative-query behavior.
+It won 15 queries while BM25 won 21. This small synthetic English dataset is
+useful for deterministic regression analysis, not broad external validity.
+Neither BM25 nor cosine scores are calibrated confidence, and latency is
+machine-dependent.
+
+See the [BM25](reports/bm25-baseline.md) and
+[semantic](reports/semantic-baseline.md) reports, the complete
+[paired comparison](reports/bm25-vs-semantic.md), and the
 [evaluation methodology](docs/retrieval-evaluation.md).
 
 ## Python API
@@ -221,8 +259,10 @@ asyncio.run(main())
 ```
 
 `SearchHit.bm25_score` is the raw SQLite FTS5 score; lower values are more
-relevant. See [Web-context architecture](docs/web-context.md) for processing,
-chunking, schema, deduplication, migrations, and metrics.
+relevant. Semantic results expose descending cosine similarity and model
+identity through separate typed models. See
+[Web-context architecture](docs/web-context.md) for processing, chunking,
+schema, deduplication, migrations, and metrics.
 
 ## Standalone crawler
 
@@ -274,19 +314,22 @@ limits.
 
 ## Current limitations
 
-- Lexical BM25 only; no embeddings, vector search, or hybrid search
-- No reranker or generated answers
+- Exact semantic scan is linear in chunk count and embedding dimension
+- No hybrid retrieval, reranking, or calibrated abstention threshold
+- No generated answers
 - No JavaScript browser rendering
 - Approximate, model-agnostic token estimator
 - SQLite FTS5 is required
 - Local stdio MCP only
-- Negative-query abstention is not calibrated
+- Semantic inference requires a separately installed and cached model
+- Semantic retrieval is not exposed through MCP
 
 ## Documentation
 
 - [Web-context architecture](docs/web-context.md)
 - [MCP server](docs/mcp.md)
 - [Retrieval evaluation](docs/retrieval-evaluation.md)
+- [Semantic retrieval](docs/semantic-retrieval.md)
 - [Crawler and storage](docs/crawler.md)
 
 ## Development
@@ -299,13 +342,13 @@ uv run ruff format --check .
 uv run mypy src
 ```
 
-GitHub Actions runs the test suite on Python 3.12, 3.13, and 3.14, with
+GitHub Actions runs the base test suite on Python 3.12, 3.13, and 3.14, with
 linting, formatting, type checking, CLI, dependency, and package-build checks.
+An offline Python 3.12 job installs the semantic extra and runs
+controlled-vector tests without downloading a model.
 
 ## Roadmap
 
-- Semantic embeddings baseline
-- BM25 versus semantic comparison
 - Hybrid retrieval
 - Reranking
 - Calibrated negative-query abstention

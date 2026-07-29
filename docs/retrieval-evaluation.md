@@ -5,24 +5,26 @@ benchmark asks whether the index returned the right source sections, how early
 they appeared, and how much irrelevant context was included. It does not claim
 that a downstream generated answer is correct, faithful, or useful.
 
-The current benchmark is a deterministic SQLite FTS5/BM25 baseline:
+The benchmark compares deterministic SQLite FTS5/BM25 with optional local
+semantic retrieval:
 
 ```text
 versioned local corpus
     -> ContentProcessor
     -> TextChunker
     -> ContextEngine indexing
-    -> public ContextEngine.search()
+    -> public BM25 or semantic ContextEngine search
     -> stable relevance matching
     -> retrieval and context metrics
     -> JSON or Markdown report
 ```
 
-Evaluation lives in `crawlforge.evaluation`. It does not execute FTS5 SQL or
-reimplement BM25 ranking. `BM25ContextEngineStrategy` adapts the existing public
-search result into a strategy-neutral `RetrievedItem`. Future vector, hybrid, or
-reranked implementations can implement `RetrievalStrategy` and use the same
-dataset, judgments, metrics, and reporters.
+Evaluation lives in `crawlforge.evaluation`. It does not execute retrieval SQL
+or reimplement either ranking. `BM25ContextEngineStrategy` and
+`SemanticContextEngineStrategy` adapt public engine results into a
+strategy-neutral `RetrievedItem`. Future hybrid or reranked implementations can
+use the same `RetrievalStrategy` protocol, dataset, judgments, metrics, and
+reporters.
 
 ## Offline dataset
 
@@ -38,6 +40,11 @@ benchmarks/retrieval/
 
 All documents and queries were written for this benchmark. Automated tests and
 the full run use no external network access.
+
+Reports record a SHA-256 dataset signature over the exact manifest, query, and
+document bytes. Filtering queries retains the complete frozen-dataset
+signature, and paired comparison refuses different signatures, chunk settings,
+query order, K values, or token budgets.
 
 Installed wheels contain the same baseline as package data. Both `evaluate
 validate` and `evaluate run` use it when `--dataset` is omitted, regardless of
@@ -200,7 +207,7 @@ asserts deterministic retrieval-quality floors only.
 Validate the complete dataset before indexing:
 
 ```bash
-crawlforge evaluate validate \
+uv run crawlforge evaluate validate \
   --dataset benchmarks/retrieval
 ```
 
@@ -222,7 +229,7 @@ output. Validation checks:
 Run the full BM25 baseline:
 
 ```bash
-crawlforge evaluate run \
+uv run crawlforge evaluate run \
   --dataset benchmarks/retrieval \
   --database .crawlforge/evaluation.db \
   --output reports/bm25-baseline.json \
@@ -251,6 +258,57 @@ configuration, paths, or dataset structure use the established CLI error code
 writes the report and returns code 1. Diagnostic output is not mixed into JSON
 standard output.
 
+## Semantic baseline and paired comparison
+
+The semantic baseline uses the production provider and exact search path, not
+test vectors. Install the optional runtime and run the pinned model on CPU:
+
+```bash
+uv run --extra semantic crawlforge evaluate run \
+  --strategy semantic \
+  --dataset benchmarks/retrieval \
+  --database .crawlforge/semantic-evaluation.db \
+  --output reports/semantic-baseline.json \
+  --format json \
+  --limit-values 1,3,5,10 \
+  --token-budget 3000 \
+  --repeat-latency 5 \
+  --device cpu
+```
+
+The paired command builds one corpus and evaluates BM25 before semantic search
+against the same chunks:
+
+```bash
+uv run --extra semantic crawlforge evaluate compare \
+  --strategies bm25,semantic \
+  --dataset benchmarks/retrieval \
+  --database .crawlforge/evaluation-compare.db \
+  --output reports/bm25-vs-semantic.md \
+  --format markdown \
+  --limit-values 1,3,5,10 \
+  --token-budget 3000 \
+  --repeat-latency 5 \
+  --bootstrap-samples 5000 \
+  --bootstrap-seed 20260729 \
+  --device cpu
+```
+
+The comparison reports aggregate and category deltas, first relevant ranks,
+different retrieved sources, semantic wins, BM25 wins, both-success and
+both-fail queries, and semantic regressions. Query failures remain isolated and
+visible instead of aborting the other strategy. Paired bootstrap intervals use
+query-level metric deltas from non-failed positive queries and a fixed seed.
+They are exploratory and are not CI gates or claims of statistical
+significance.
+
+The current frozen run found higher semantic Hit@5 and Recall@5, but lower MRR,
+MAP@5, and negative-query no-result accuracy. Semantic improved paraphrase and
+conceptual category MRR while regressing exact terms and code symbols. See the
+[semantic details](semantic-retrieval.md),
+[semantic report](../reports/semantic-baseline.md), and
+[paired report](../reports/bm25-vs-semantic.md).
+
 ## Reading reports
 
 The JSON report contains:
@@ -264,11 +322,12 @@ The JSON report contains:
 - warm-index latency and context summaries;
 - `worst_queries`, failures, and warnings.
 
-The Markdown report presents the same run as overall and category tables,
-strongest and weakest queries, false positives, false negatives, latency,
-context efficiency, limitations, and a bounded conclusion about whether the
-observed vocabulary mismatches justify semantic retrieval. Reports omit the
-dataset, database, and output machine paths.
+The Markdown strategy reports present the same run as overall and category
+tables, strongest and weakest queries, false positives, false negatives,
+latency, context efficiency, limitations, and a bounded strategy-specific
+conclusion. Paired reports keep comparison evidence separate from either
+strategy's own ranking. Reports omit dataset, database, cache, and output
+machine paths.
 
 ## Extending the benchmark
 
@@ -279,7 +338,7 @@ To add a query:
 3. reference an existing manifest document and section;
 4. assign grades by manual source review;
 5. add an evidence span when an exact visible fact is important;
-6. run `crawlforge evaluate validate`;
+6. run `uv run crawlforge evaluate validate`;
 7. inspect the query's complete ranking and category metrics.
 
 To add a document, write original local HTML, add its safe relative path and
@@ -305,13 +364,15 @@ Return items in strategy rank order with stable source provenance. The
 evaluator does not sort by score. Keep the same dataset version and judgments
 when comparing BM25, vector, hybrid, or reranked results.
 
-## Semantic-search decision boundary
+## Hybrid-search decision boundary
 
-This stage does not include embeddings, vector storage, hybrid retrieval,
-fusion, reranking, answer generation, or an LLM judge. The baseline should
-justify a semantic stage only through concrete failures: relevant sections
-missed because the query and source use different vocabulary, relevant sources
-consistently ranked below lexical distractors, or bounded context dominated by
-irrelevant lexical matches. Short ambiguous queries and false positives on
-negative queries remain separate problems; semantic retrieval does not
-automatically solve abstention or intent ambiguity.
+This stage includes independent BM25 and semantic baselines, but no fusion,
+reranking, answer generation, or LLM judge. The paired evidence justifies a
+future hybrid experiment because semantic retrieval materially improves
+paraphrase and conceptual MRR. It does not justify replacing BM25: exact terms,
+code symbols, aggregate MRR, and strict negative-query behavior regress.
+
+Any hybrid stage should keep this dataset and ground truth frozen, preserve
+separate failure evidence, and test whether fusion retains BM25's lexical
+strength while recovering semantic vocabulary mismatches. Short ambiguous and
+negative queries remain separate calibration problems.
