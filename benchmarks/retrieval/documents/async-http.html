@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Async HTTP Timeouts and Lifecycle</title>
+</head>
+<body>
+<main>
+  <h1>Async HTTP Timeouts and Lifecycle</h1>
+  <p>An asynchronous crawler needs explicit ownership rules for clocks,
+  connections, responses, and shutdown. Fast requests are not enough: the
+  client must remain bounded when a peer accepts a connection and then stops
+  sending bytes.</p>
+
+  <section id="timeout-budgets">
+    <h2>Timeout budgets</h2>
+    <p>A connect timeout limits DNS resolution and connection establishment. A
+    read timeout limits inactivity while response bytes are expected. They are
+    different from a whole-operation deadline, which also includes robots
+    policy, rate slots, redirects, and retry backoff. A useful timeout budget
+    allocates time to each phase instead of restarting an unlimited clock after
+    every retry.</p>
+    <ul>
+      <li><code>connect_timeout</code> protects connection setup.</li>
+      <li><code>read_timeout</code> detects a stalled response stream.</li>
+      <li>An outer deadline bounds the complete logical fetch.</li>
+    </ul>
+    <pre><code>async with asyncio.timeout(operation_timeout):
+    body = await crawler.fetch(url)</code></pre>
+    <p>Cancellation from the outer deadline must be re-raised after cleanup; it
+    is not a transient network result.</p>
+  </section>
+
+  <section id="session-lifecycle">
+    <h2>Session lifecycle</h2>
+    <p><code>AsyncCrawler</code> lazily creates one pooled client session and
+    shares its connector across fetches. Reusing the session preserves
+    connection pooling and gives concurrency limits one clear owner. Creating a
+    session per URL wastes sockets and makes shutdown races more likely.</p>
+    <pre><code>async with AsyncCrawler(config) as crawler:
+    pages = await crawler.fetch_multiple(urls)
+# __aexit__ awaits close()</code></pre>
+    <p><code>close()</code> should be idempotent. A second call must not close a
+    replacement session or fail because the first caller already released the
+    connector. Lifecycle logs belong on a diagnostic channel, never mixed with
+    machine-readable results.</p>
+  </section>
+
+  <section id="response-ownership">
+    <h2>Response ownership</h2>
+    <p>The coroutine that opens a response owns its body and release path.
+    Reading, decoding, and status classification happen before the response
+    context exits. If parsing is moved to a worker task, copy the required body
+    and metadata first; do not pass a live socket-backed response beyond its
+    context manager.</p>
+    <ul>
+      <li>Consume or release every response.</li>
+      <li>Preserve the final response URL for relative-link resolution.</li>
+      <li>Keep the requested URL separately for result identity and audit.</li>
+    </ul>
+    <p>This ownership rule also applies to redirect hops and robots.txt
+    requests. Every early return needs the same cleanup as the successful
+    branch.</p>
+  </section>
+
+  <section id="empty-body-failures">
+    <h2>Empty bodies and failures</h2>
+    <p>A compatibility-oriented <code>fetch()</code> interface may return the
+    empty string for both a successful zero-length body and a handled request
+    failure. That ambiguity is intentional when the public return type must
+    remain <code>str</code>. Callers that need the distinction should use
+    structured crawl statistics or an error-aware internal result.</p>
+    <pre><code>text = await crawler.fetch(url)
+if text == "":
+    # Empty response body or failed fetch; consult diagnostics.
+    pass</code></pre>
+    <p>Do not convert cancellation into an empty string. Cancellation controls
+    task lifecycle, while an empty return value represents an ordinary completed
+    call under the compatibility contract.</p>
+  </section>
+</main>
+</body>
+</html>

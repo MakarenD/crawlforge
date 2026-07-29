@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "name": "crawlforge-retrieval-baseline",
+  "version": "1.0.0",
+  "description": "Deterministic offline benchmark for section-level lexical retrieval over original CrawlForge-oriented technical documents.",
+  "documents": [
+    {
+      "document_id": "async-http",
+      "path": "documents/async-http.html",
+      "url": "https://benchmark.crawlforge.local/async-http",
+      "title": "Async HTTP Timeouts and Lifecycle",
+      "sections": [
+        {
+          "section_id": "timeout-budgets",
+          "heading_path": ["Async HTTP Timeouts and Lifecycle", "Timeout budgets"]
+        },
+        {
+          "section_id": "session-lifecycle",
+          "heading_path": ["Async HTTP Timeouts and Lifecycle", "Session lifecycle"]
+        },
+        {
+          "section_id": "response-ownership",
+          "heading_path": ["Async HTTP Timeouts and Lifecycle", "Response ownership"]
+        },
+        {
+          "section_id": "empty-body-failures",
+          "heading_path": ["Async HTTP Timeouts and Lifecycle", "Empty bodies and failures"]
+        }
+      ]
+    },
+    {
+      "document_id": "concurrency",
+      "path": "documents/concurrency.html",
+      "url": "https://benchmark.crawlforge.local/concurrency",
+      "title": "Bounded Concurrency and Cancellation",
+      "sections": [
+        {
+          "section_id": "semaphore-hierarchy",
+          "heading_path": ["Bounded Concurrency and Cancellation", "Semaphore hierarchy"]
+        },
+        {
+          "section_id": "rolling-scheduler",
+          "heading_path": ["Bounded Concurrency and Cancellation", "Rolling scheduler"]
+        },
+        {
+          "section_id": "cancellation-cleanup",
+          "heading_path": ["Bounded Concurrency and Cancellation", "Cancellation cleanup"]
+        },
+        {
+          "section_id": "queue-transitions",
+          "heading_path": ["Bounded Concurrency and Cancellation", "Queue state transitions"]
+        }
+      ]
+    },
+    {
+      "document_id": "retry-errors",
+      "path": "documents/retry-errors.html",
+      "url": "https://benchmark.crawlforge.local/retry-errors",
+      "title": "Retries, Errors, and Backoff",
+      "sections": [
+        {
+          "section_id": "error-taxonomy",
+          "heading_path": ["Retries, Errors, and Backoff", "Error taxonomy"]
+        },
+        {
+          "section_id": "exponential-backoff",
+          "heading_path": ["Retries, Errors, and Backoff", "Exponential backoff"]
+        },
+        {
+          "section_id": "retry-after",
+          "heading_path": ["Retries, Errors, and Backoff", "Retry-After handling"]
+        },
+        {
+          "section_id": "retry-observability",
+          "heading_path": ["Retries, Errors, and Backoff", "Retry observability"]
+        }
+      ]
+    },
+    {
+      "document_id": "politeness",
+      "path": "documents/politeness.html",
+      "url": "https://benchmark.crawlforge.local/politeness",
+      "title": "Rate Limits and Robots Policy",
+      "sections": [
+        {
+          "section_id": "rate-slots",
+          "heading_path": ["Rate Limits and Robots Policy", "Rate slots"]
+        },
+        {
+          "section_id": "robots-decisions",
+          "heading_path": ["Rate Limits and Robots Policy", "Robots decisions"]
+        },
+        {
+          "section_id": "crawl-delay",
+          "heading_path": ["Rate Limits and Robots Policy", "Crawl-delay scheduling"]
+        },
+        {
+          "section_id": "robots-cache",
+          "heading_path": ["Rate Limits and Robots Policy", "Origin-scoped robots cache"]
+        }
+      ]
+    },
+    {
+      "document_id": "url-security",
+      "path": "documents/url-security.html",
+      "url": "https://benchmark.crawlforge.local/url-security",
+      "title": "URL Identity and Network Safety",
+      "sections": [
+        {
+          "section_id": "url-normalization",
+          "heading_path": ["URL Identity and Network Safety", "URL normalization"]
+        },
+        {
+          "section_id": "dns-private-addresses",
+          "heading_path": ["URL Identity and Network Safety", "DNS and private addresses"]
+        },
+        {
+          "section_id": "allowed-domains",
+          "heading_path": ["URL Identity and Network Safety", "Allowed-domain boundaries"]
+        },
+        {
+          "section_id": "redirect-validation",
+          "heading_path": ["URL Identity and Network Safety", "Redirect validation"]
+        }
+      ]
+    },
+    {
+      "document_id": "sqlite-search",
+      "path": "documents/sqlite-search.html",
+      "url": "https://benchmark.crawlforge.local/sqlite-search",
+      "title": "SQLite FTS5 Index Design",
+      "sections": [
+        {
+          "section_id": "storage-separation",
+          "heading_path": ["SQLite FTS5 Index Design", "Storage separation"]
+        },
+        {
+          "section_id": "fts5-table",
+          "heading_path": ["SQLite FTS5 Index Design", "FTS5 virtual table"]
+        },
+        {
+          "section_id": "schema-migrations",
+          "heading_path": ["SQLite FTS5 Index Design", "Schema migrations"]
+        },
+        {
+          "section_id": "transactions-provenance",
+          "heading_path": ["SQLite FTS5 Index Design", "Transactions and provenance"]
+        }
+      ]
+    },
+    {
+      "document_id": "retrieval-context",
+      "path": "documents/retrieval-context.html",
+      "url": "https://benchmark.crawlforge.local/retrieval-context",
+      "title": "BM25 Retrieval and Context Budgets",
+      "sections": [
+        {
+          "section_id": "bm25-ranking",
+          "heading_path": ["BM25 Retrieval and Context Budgets", "BM25 ranking semantics"]
+        },
+        {
+          "section_id": "search-limits",
+          "heading_path": ["BM25 Retrieval and Context Budgets", "Search limits"]
+        },
+        {
+          "section_id": "token-budgets",
+          "heading_path": ["BM25 Retrieval and Context Budgets", "Token budgets"]
+        },
+        {
+          "section_id": "context-reduction",
+          "heading_path": ["BM25 Retrieval and Context Budgets", "Context reduction"]
+        }
+      ]
+    },
+    {
+      "document_id": "content-chunking",
+      "path": "documents/content-chunking.html",
+      "url": "https://benchmark.crawlforge.local/content-chunking",
+      "title": "Cleaning, Chunking, and Token Estimates",
+      "sections": [
+        {
+          "section_id": "content-cleaning",
+          "heading_path": ["Cleaning, Chunking, and Token Estimates", "Content cleaning"]
+        },
+        {
+          "section_id": "structure-preservation",
+          "heading_path": ["Cleaning, Chunking, and Token Estimates", "Structure preservation"]
+        },
+        {
+          "section_id": "heading-aware-chunks",
+          "heading_path": ["Cleaning, Chunking, and Token Estimates", "Heading-aware chunks"]
+        },
+        {
+          "section_id": "token-estimate",
+          "heading_path": ["Cleaning, Chunking, and Token Estimates", "Heuristic token estimate"]
+        }
+      ]
+    },
+    {
+      "document_id": "mcp-adapter",
+      "path": "documents/mcp-adapter.html",
+      "url": "https://benchmark.crawlforge.local/mcp-adapter",
+      "title": "Local MCP Adapter Operations",
+      "sections": [
+        {
+          "section_id": "stable-tools",
+          "heading_path": ["Local MCP Adapter Operations", "Stable tools"]
+        },
+        {
+          "section_id": "stdio-lifecycle",
+          "heading_path": ["Local MCP Adapter Operations", "Stdio lifecycle"]
+        },
+        {
+          "section_id": "tool-errors",
+          "heading_path": ["Local MCP Adapter Operations", "Tool errors"]
+        },
+        {
+          "section_id": "output-safety",
+          "heading_path": ["Local MCP Adapter Operations", "Output and content safety"]
+        }
+      ]
+    },
+    {
+      "document_id": "cli-config",
+      "path": "documents/cli-config.html",
+      "url": "https://benchmark.crawlforge.local/cli-config",
+      "title": "CLI, Configuration, and Storage",
+      "sections": [
+        {
+          "section_id": "cli-commands",
+          "heading_path": ["CLI, Configuration, and Storage", "Command boundaries"]
+        },
+        {
+          "section_id": "config-precedence",
+          "heading_path": ["CLI, Configuration, and Storage", "Configuration precedence"]
+        },
+        {
+          "section_id": "storage-backends",
+          "heading_path": ["CLI, Configuration, and Storage", "Storage backends"]
+        },
+        {
+          "section_id": "cli-errors",
+          "heading_path": ["CLI, Configuration, and Storage", "Error and output channels"]
+        }
+      ]
+    }
+  ]
+}

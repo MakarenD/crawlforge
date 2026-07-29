@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Rate Limits and Robots Policy</title>
+</head>
+<body>
+<main>
+  <h1>Rate Limits and Robots Policy</h1>
+  <p>Polite crawling combines capacity, time, and authorization. A concurrency
+  semaphore limits simultaneous requests, while a rate limiter spaces their
+  start times and robots.txt decides whether a path may be fetched.</p>
+
+  <section id="rate-slots">
+    <h2>Rate slots</h2>
+    <p><code>RateLimiter</code> assigns request slots per canonical origin. A
+    caller waits for capacity before recording its slot; recording first and
+    then waiting can reserve time for a request that is cancelled before it
+    starts. Slots use a monotonic clock so wall-clock adjustments do not create
+    bursts.</p>
+    <pre><code>await limiter.acquire(origin)
+try:
+    await request(url)
+finally:
+    limiter.release(origin)</code></pre>
+    <p>Minimum delay, configured jitter, and server guidance all contribute to
+    the next eligible start time. Rate slots apply to direct pages, redirect
+    hops, and robots.txt requests.</p>
+  </section>
+
+  <section id="robots-decisions">
+    <h2>Robots decisions</h2>
+    <p><code>RobotsParser</code> evaluates the selected User-Agent group and the
+    normalized percent-encoded path. The most specific matching Allow or
+    Disallow rule wins. Authorization and server failures while fetching
+    robots.txt fail closed; an ordinary missing robots.txt permits crawling.</p>
+    <ul>
+      <li>404 or 410 means no published restriction.</li>
+      <li>401, 403, 429, and server errors do not imply permission.</li>
+      <li>Network failure does not silently bypass an existing policy.</li>
+    </ul>
+    <p>This distinction prevents “robots policy unavailable” from becoming
+    accidental authorization.</p>
+  </section>
+
+  <section id="crawl-delay">
+    <h2>Crawl-delay scheduling</h2>
+    <p>A matching robots.txt <code>Crawl-delay</code> sets a per-origin minimum
+    interval between request starts. It is combined with the configured minimum
+    delay by taking the stricter value, then bounded jitter may be added.
+    Crawl-delay is not a sleep after a response; slow responses already consume
+    time but do not redefine the next reserved start slot.</p>
+    <pre><code>User-agent: *
+Crawl-delay: 2.5</code></pre>
+    <p>Robots scheduling and Retry-After address different signals. Crawl-delay
+    is a standing origin policy, whereas Retry-After reacts to a particular
+    response.</p>
+  </section>
+
+  <section id="robots-cache">
+    <h2>Origin-scoped robots cache</h2>
+    <p>Robots rules are cached by scheme, canonical host, and effective port.
+    Two hosts with similar names do not share authorization, and HTTP rules do
+    not automatically authorize HTTPS. A bounded time-to-live permits policy
+    refresh without fetching robots.txt for every page.</p>
+    <p>Concurrent cache misses for the same origin should share one in-flight
+    fetch. A failed or cancelled refresh must wake waiters with the same safe
+    decision and must not leave a permanent “loading” entry. Redirects taken by
+    the robots request pass through the same network and allowed-domain checks
+    as page redirects.</p>
+  </section>
+</main>
+</body>
+</html>

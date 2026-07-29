@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Cleaning, Chunking, and Token Estimates</title>
+</head>
+<body>
+<main>
+  <h1>Cleaning, Chunking, and Token Estimates</h1>
+  <p>Retrieval quality begins before indexing. A deterministic content pipeline
+  removes page furniture, preserves technical structure, and produces chunks
+  whose identity does not depend on process-randomized hashes.</p>
+
+  <section id="content-cleaning">
+    <h2>Content cleaning</h2>
+    <p><code>ContentProcessor</code> removes scripts, styles, templates,
+    noscript blocks, and clearly identified navigation or footer regions.
+    Cleaning remains conservative: an unfamiliar element is kept when it
+    contains useful visible text. Unicode is normalized without transliterating
+    identifiers or changing code.</p>
+    <ul>
+      <li>Discard executable and hidden page furniture.</li>
+      <li>Keep article prose, tables, lists, and code samples.</li>
+      <li>Resolve useful links against the effective response URL.</li>
+    </ul>
+    <p>The processor emits normalized plain text and minimal Markdown from the
+    same structured blocks.</p>
+  </section>
+
+  <section id="structure-preservation">
+    <h2>Structure preservation</h2>
+    <p>Heading paths capture the active H1 through H6 hierarchy for each block.
+    Nested lists retain item order and indentation. Preformatted code remains a
+    distinct block so whitespace-sensitive examples are not merged into prose.
+    Simple tables preserve header and row relationships.</p>
+    <pre><code>for block in blocks:
+    emit(block.heading_path, block.kind, block.text)</code></pre>
+    <p>A same-origin canonical URL may be recorded as source identity. A
+    cross-origin canonical link is ignored for identity to prevent a page from
+    claiming another site’s document key.</p>
+  </section>
+
+  <section id="heading-aware-chunks">
+    <h2>Heading-aware chunks</h2>
+    <p><code>TextChunker</code> groups adjacent blocks under their heading path
+    toward <code>target_chars=1200</code>, enforces
+    <code>max_chars=1600</code>, and carries up to
+    <code>overlap_chars=160</code> into the next chunk. Boundaries prefer
+    paragraphs and list items over arbitrary character positions.</p>
+    <p>Very large prose or code blocks are split deterministically. Empty and
+    heading-only chunks are discarded. Chunk IDs use SHA-256 over stable source
+    and content fields, so identical input produces identical identities across
+    processes.</p>
+  </section>
+
+  <section id="token-estimate">
+    <h2>Heuristic token estimate</h2>
+    <p><code>HeuristicTokenEstimator</code> uses
+    <code>ceil(character_count / 4)</code>. This estimate is fast, local, and
+    model-agnostic, but it is not exact tokenization. Dense code, non-Latin text,
+    and unusual whitespace may differ from a particular model tokenizer.</p>
+    <pre><code>estimated_tokens = max(1, math.ceil(len(text) / 4))</code></pre>
+    <p>The same estimator must be used for indexed totals and selected context
+    so reduction metrics are internally consistent. Reports should always label
+    the number as estimated tokens.</p>
+  </section>
+</main>
+</body>
+</html>

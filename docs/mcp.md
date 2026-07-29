@@ -25,13 +25,8 @@ uv sync --extra mcp
 uv run crawlforge-mcp --database .crawlforge/index.db
 ```
 
-After a PyPI release, an isolated invocation can use:
-
-```bash
-uvx --from "crawlforge[mcp]" \
-  crawlforge-mcp \
-  --database ~/.local/share/crawlforge/index.db
-```
+CrawlForge is not currently published on PyPI. Run the server from a source
+checkout or install the project and its `mcp` extra into a managed environment.
 
 Choose an absolute user-controlled data path appropriate to the platform. For
 example, macOS applications commonly use a path below
@@ -52,10 +47,13 @@ typical stdio configuration is:
 {
   "mcpServers": {
     "crawlforge": {
-      "command": "uvx",
+      "command": "uv",
       "args": [
-        "--from",
-        "crawlforge[mcp]",
+        "--directory",
+        "/absolute/path/to/crawlforge",
+        "run",
+        "--extra",
+        "mcp",
         "crawlforge-mcp",
         "--database",
         "/absolute/path/to/index.db"
@@ -65,9 +63,9 @@ typical stdio configuration is:
 }
 ```
 
-The process uses standard output only for MCP protocol messages. Lifecycle,
-tool outcome, duration, and bounded counter diagnostics are written to standard
-error.
+Replace both absolute paths with user-controlled locations. The process uses
+standard output only for MCP protocol messages. Lifecycle, tool outcome,
+duration, and bounded counter diagnostics are written to standard error.
 
 ## Server configuration
 

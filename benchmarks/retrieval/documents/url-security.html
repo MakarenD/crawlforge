@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>URL Identity and Network Safety</title>
+</head>
+<body>
+<main>
+  <h1>URL Identity and Network Safety</h1>
+  <p>URL equality, crawl scope, and network authorization are related but
+  distinct decisions. A normalized identity prevents duplicate scheduling;
+  network policy prevents a permitted-looking name from reaching a forbidden
+  address.</p>
+
+  <section id="url-normalization">
+    <h2>URL normalization</h2>
+    <p><code>canonical_hostname()</code> lowercases DNS names, removes a
+    trailing dot, and compares Unicode names through one IDNA representation.
+    Default ports can be normalized for origin comparison, while a non-default
+    port remains significant. Fragments are not sent in HTTP requests and do
+    not create separate crawl identities.</p>
+    <ul>
+      <li>Preserve path case and meaningful percent encoding.</li>
+      <li>Resolve relative links against the final response URL.</li>
+      <li>Reject missing or malformed HTTP(S) authorities.</li>
+    </ul>
+    <p>A same-origin canonical link may define document identity, but a
+    cross-origin canonical declaration cannot replace the fetched source.</p>
+  </section>
+
+  <section id="dns-private-addresses">
+    <h2>DNS and private addresses</h2>
+    <p><code>URLNetworkPolicy</code> validates literal addresses and every DNS
+    answer before a connection is opened. By default, loopback, private,
+    link-local, multicast, unspecified, reserved, and other non-public targets
+    are rejected. A mixed public/private DNS result is rejected rather than
+    choosing only the convenient answer.</p>
+    <pre><code>URLPolicyError(
+    "private and non-public network addresses are blocked"
+)</code></pre>
+    <p>The check is repeated close to connection time to reduce DNS rebinding
+    risk. An explicit private-network opt-in changes this boundary for trusted
+    local use; it is not inferred from an allowed hostname.</p>
+  </section>
+
+  <section id="allowed-domains">
+    <h2>Allowed-domain boundaries</h2>
+    <p>An allowed-domain list compares canonical hostnames, not untrusted string
+    suffixes. Allowing <code>docs.example.test</code> does not allow
+    <code>docs.example.test.attacker.invalid</code>. A deliberate subdomain rule
+    can include descendants, but user information and ports cannot disguise the
+    hostname.</p>
+    <pre><code>allowed_domains = ("docs.example.test",)</code></pre>
+    <p>Domain permission does not override address safety. The hostname must
+    pass scope checks and its resolved addresses must pass network policy.</p>
+  </section>
+
+  <section id="redirect-validation">
+    <h2>Redirect validation</h2>
+    <p>Automatic transport redirects are disabled so every Location target can
+    be resolved, normalized, scope-checked, and network-checked before the next
+    request. The same User-Agent, rate slot rules, and robots decision apply to
+    each hop. A chain that exceeds the configured redirect limit ends with a
+    clear “redirect limit exceeded” failure.</p>
+    <p>The final URL is preserved for parsing relative links, while the original
+    requested URL remains the crawl result key. A redirect to a private address
+    is blocked even when the first public URL was allowed. Redirect loops and
+    missing Location headers are terminal protocol errors rather than retryable
+    DNS failures.</p>
+  </section>
+</main>
+</body>
+</html>
