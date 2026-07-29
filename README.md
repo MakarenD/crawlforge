@@ -1,40 +1,53 @@
 # CrawlForge
 
-[![CI][ci-badge]][ci-workflow]
+[![CI](https://github.com/MakarenD/crawlforge/actions/workflows/ci.yml/badge.svg)](https://github.com/MakarenD/crawlforge/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Typing: typed](https://img.shields.io/badge/typing-typed-blue.svg)](src/crawlforge/py.typed)
 
-CrawlForge is a local HTTP-first web-context engine with BM25 retrieval and an
-MCP adapter for AI agents. Its asynchronous crawler remains available as a
-composable foundation for reliable, polite, and observable web crawling.
+CrawlForge is a local-first web-context engine for AI agents.
 
-## Status
+> Crawl once. Search locally. Send bounded context with sources.
 
-CrawlForge provides queue-driven website crawling, an importable asynchronous
-HTTP client, structured HTML parsing, and a command-line interface with help and
-version output. Crawls support depth and page limits, URL filters, duplicate
-suppression, global and per-domain concurrency, live progress logging, and
-structured success and failure state. Requests support per-domain or global
-rate limiting, robots.txt enforcement, configurable delays, User-Agent
-rotation, classified failures, configurable retries with exponential backoff,
-retry statistics, and asynchronous JSON, CSV, or SQLite persistence.
-The integrated crawler also supports recursive sitemap indexes, validated JSON
-configuration, advanced status and domain statistics, JSON and standalone HTML
-reports, rotating file logs, live percentage/speed/ETA reporting, and a
-production command-line entry point.
-CrawlForge can also clean successful pages, split them into stable
-heading-aware chunks, index them in local SQLite FTS5, retrieve BM25-ranked
-fragments, and build a source-linked context under an approximate token budget.
-The local stdio MCP adapter exposes those same application-service operations
-through four bounded tools.
+AI agents often receive complete HTML pages containing navigation, scripts,
+repeated layout blocks, and irrelevant sections. CrawlForge performs
+deterministic processing locally and returns a bounded set of source-linked
+chunks ranked for relevance. Retrieval remains lexical and can include
+irrelevant candidates; the checked baseline below makes those limitations
+visible. The same pipeline is available through Python, the CLI, or a local MCP
+stdio server.
 
-## Local web-context retrieval
+## How it works
 
-The web-context layer reduces raw page noise before retrieval. It removes
-scripts, styles, and conservative navigation boilerplate; preserves headings,
-lists, links, code, Unicode, and simple tables; and produces plain text plus a
-minimal normalized Markdown representation. The resulting chunks are stored in
-a transactional, deduplicated SQLite FTS5 index.
+```mermaid
+flowchart LR
+    A[Website] --> B[Async crawler]
+    B --> C[Clean and normalize]
+    C --> D[Heading-aware chunks]
+    D --> E[SQLite FTS5 / BM25]
+    E --> F[Token-budgeted context]
+    F --> G[Python / CLI / MCP]
+```
 
-Create or update a local index:
+Unlike a crawler that stops after downloading or extracting pages, CrawlForge
+maintains a local retrieval index and selects complete passages under an
+explicit context budget. It does not generate answers or send indexed content
+to an external retrieval service.
+
+## Key capabilities
+
+- Asynchronous HTTP-first crawling
+- Queue, depth, page, and concurrency limits
+- robots.txt enforcement, rate limiting, and bounded retries
+- Deterministic content cleaning and heading-aware chunking
+- Local deduplicated SQLite FTS5/BM25 index
+- Token-budgeted context with source provenance
+- Local MCP stdio integration with bounded typed outputs
+- Deterministic offline retrieval evaluation
+
+## Quick start
+
+After [installing from source](#installation), index a documentation site:
 
 ```bash
 crawlforge index https://example.com/docs \
@@ -43,7 +56,7 @@ crawlforge index https://example.com/docs \
   --max-depth 2
 ```
 
-Search and select complete chunks within a budget:
+Search the local index and select complete chunks within the token estimate:
 
 ```bash
 crawlforge search "How are retries configured?" \
@@ -52,11 +65,133 @@ crawlforge search "How are retries configured?" \
   --token-budget 3000
 ```
 
-Add `--json` to either command for machine-readable standard output. Diagnostic
-logs remain on standard error.
+A human-readable result keeps its source and score. For example, abridged:
 
-The same operations are available through the application service used by the
-CLI:
+```text
+1. Retry configuration
+   URL: https://example.com/docs/retries
+   BM25: -2.174630 (lower is more relevant)
+   ...
+Context: ~420/3000 estimated tokens, 1680 characters, 5 candidates
+```
+
+Add `--json` for machine-readable standard output. Progress and diagnostics
+remain on standard error.
+
+## Installation
+
+The `crawlforge` package is not currently published on PyPI. Install from a
+source checkout:
+
+```bash
+git clone https://github.com/MakarenD/crawlforge.git
+cd crawlforge
+uv sync
+```
+
+Include the optional MCP SDK integration when needed:
+
+```bash
+uv sync --extra mcp
+```
+
+Editable pip installation is also supported:
+
+```bash
+python -m pip install -e .
+python -m pip install -e ".[mcp]"
+```
+
+CrawlForge requires Python 3.12 or newer and a Python SQLite build with FTS5.
+
+## MCP integration
+
+Start the local stdio server from the source checkout:
+
+```bash
+uv run crawlforge-mcp \
+  --database .crawlforge/index.db
+```
+
+A generic stdio client configuration looks like this:
+
+```json
+{
+  "mcpServers": {
+    "crawlforge": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/absolute/path/to/crawlforge",
+        "run",
+        "--extra",
+        "mcp",
+        "crawlforge-mcp",
+        "--database",
+        "/absolute/path/to/index.db"
+      ]
+    }
+  }
+}
+```
+
+The server exposes four tools:
+
+- `index_site` crawls and indexes within server-owned limits;
+- `search_index` returns BM25-ranked chunks;
+- `build_context` returns a bounded source-linked context;
+- `get_index_info` reports local index readiness and counts.
+
+MCP runs locally over stdio, and the SQLite database remains under the user's
+control. Web content is untrusted data. Public HTTP(S) targets are allowed by
+default, while private and non-routable network targets are blocked. See the
+[MCP server documentation](docs/mcp.md) for configuration, tool schemas,
+limits, and the complete trust model.
+
+## Retrieval evaluation
+
+The checked-in offline benchmark runs the production cleaning, chunking,
+indexing, and public search path against graded section-level relevance
+judgments. The current baseline contains 10 original HTML documents, 40 stable
+sections, 50 indexed chunks, 64 queries, 114 positive judgments, and 8 query
+categories.
+
+Aggregate BM25 results from the current
+[JSON report](reports/bm25-baseline.json):
+
+| Metric | BM25 baseline |
+| --- | ---: |
+| Hit Rate@5 | 96.4% |
+| Precision@5 | 28.9% |
+| Recall@5 | 80.2% |
+| MRR | 0.8681 |
+| MAP@5 | 0.7294 |
+| NDCG@5 | 0.8100 |
+
+Selected category results:
+
+| Category | Hit@5 | Recall@5 | MRR |
+| --- | ---: | ---: | ---: |
+| Exact term | 100.0% | 100.0% | 1.0000 |
+| Code symbol | 100.0% | 100.0% | 1.0000 |
+| Paraphrase | 87.5% | 81.2% | 0.7639 |
+| Conceptual | 100.0% | 81.2% | 0.7083 |
+| Ambiguous | 87.5% | 40.6% | 0.6667 |
+
+Exact terms and code symbols are strong on this corpus. Paraphrases and short
+ambiguous queries are harder, and strict negative-query no-result accuracy is
+only 12.5%. This dataset is small and synthetic; it is useful for deterministic
+regression analysis, not broad external validity. Raw FTS5 BM25 scores are not
+calibrated confidence values, token counts are model-agnostic estimates, and
+latency depends on the machine.
+
+See the complete [Markdown report](reports/bm25-baseline.md) and
+[evaluation methodology](docs/retrieval-evaluation.md).
+
+## Python API
+
+`ContextEngine` owns crawling-to-index ingestion, lexical search, bounded
+context selection, and SQLite lifecycle:
 
 ```python
 import asyncio
@@ -64,7 +199,7 @@ import asyncio
 from crawlforge import ContextEngine
 
 
-async def retrieve() -> None:
+async def main() -> None:
     async with ContextEngine(".crawlforge/index.db") as engine:
         await engine.ingest_url(
             "https://example.com/docs",
@@ -82,202 +217,16 @@ async def retrieve() -> None:
         print(hit.source.url)
 
 
-asyncio.run(retrieve())
-```
-
-`SearchHit.bm25_score` is the raw SQLite FTS5 score: lower values are more
-relevant. The default token estimator is a deterministic character heuristic,
-not the tokenizer of a particular model. Consequently,
-`estimated_context_reduction` is an engineering estimate rather than a measured
-model-specific token saving.
-
-The default database is `.crawlforge/index.db`. Remove that selected local file
-to clear the index. Detailed architecture, schema, metrics, cleanup, chunking,
-and limitations are documented in
-[`docs/web-context.md`](docs/web-context.md).
-
-## Local MCP adapter
-
-The MCP workflow is deliberately small:
-
-```text
-crawl/index once -> query locally many times -> return bounded relevant context
-```
-
-Install the optional official MCP SDK integration and start the stdio server:
-
-```bash
-uv sync --extra mcp
-uv run crawlforge-mcp --database .crawlforge/index.db
-```
-
-The server exposes only `index_site`, `search_index`, `build_context`, and
-`get_index_info`. It owns one `ContextEngine` and a fixed database path for its
-lifecycle. Tool calls cannot select a local file, execute SQL, relax server
-caps, or enable private-network access. `index_site` makes real network
-requests, obeys robots.txt, and blocks private or non-routable targets by
-default, including redirect destinations and resolved DNS addresses. Server
-startup also bounds page and robots body sizes, individual request attempts,
-and total crawl duration.
-
-MCP runs locally over stdio; the SQLite database remains under the user's
-control. Retrieval is lexical BM25, token counts are approximate, and retrieved
-website text is untrusted external content rather than server instructions.
-Keep result URLs as provenance. Installation, client configuration, tools,
-security policy, and Inspector verification are documented in
-[`docs/mcp.md`](docs/mcp.md).
-
-This stage does not include embeddings, a vector database, hybrid search,
-reranking, external model calls, generated answers, browser rendering, remote
-MCP hosting, or background crawl jobs.
-
-## Integrated crawler
-
-`AdvancedCrawler` composes the existing queue, concurrency, politeness, retry,
-parsing, and storage components. It adds sitemap discovery, configuration,
-reporting, and a no-argument `crawl()` operation:
-
-```python
-import asyncio
-
-from crawlforge import AdvancedCrawler
-
-
-async def main() -> None:
-    crawler = AdvancedCrawler.from_config("crawler.json")
-    try:
-        await crawler.crawl()
-        stats = crawler.get_stats()
-        print(f"Processed: {stats['total_pages']} pages")
-        print(f"Successful: {stats['successful']}")
-        print(f"Failed: {stats['failed']}")
-        crawler.export_to_html_report("report.html")
-    finally:
-        await crawler.close()
-
-
 asyncio.run(main())
 ```
 
-The asynchronous context manager is also supported. Configured result reports
-are written in worker threads after the crawl, and all HTTP, sitemap, and
-storage resources are closed together.
+`SearchHit.bm25_score` is the raw SQLite FTS5 score; lower values are more
+relevant. See [Web-context architecture](docs/web-context.md) for processing,
+chunking, schema, deduplication, migrations, and metrics.
 
-## Sitemap support
+## Standalone crawler
 
-`SitemapParser.fetch_sitemap()` accepts both `urlset` documents and recursive
-`sitemapindex` trees. It handles XML namespaces, preserves first-seen URL order,
-deduplicates pages and sitemap documents, and stops index cycles.
-
-```python
-import asyncio
-
-from crawlforge import SitemapParser
-
-
-async def discover() -> None:
-    async with SitemapParser() as parser:
-        urls = await parser.fetch_sitemap(
-            "https://example.com/sitemap.xml",
-        )
-    print(len(urls))
-
-
-asyncio.run(discover())
-```
-
-The standalone parser owns a lazy `aiohttp` session. Inside `AdvancedCrawler`,
-it instead uses the crawler's asynchronous fetch path, so rate limits,
-robots.txt rules, retries, redirects, User-Agent selection, and request
-timeouts remain consistent. Traversal is bounded by configurable depth,
-sitemap count, URL count, and per-document byte limits. Invalid XML, unsupported
-roots, relative locations, and non-HTTP locations fail with source-aware
-errors.
-
-Sitemap page URLs are regular crawl seeds after they pass configured
-same-domain, include, and exclude filters. Explicit `urls` remain starting URLs
-and preserve the existing `AsyncCrawler` behavior. A failed sitemap is recorded
-in `sitemap_failures` without discarding seeds from other sources. If every
-configured source is empty, invalid, or filtered out, the crawl fails before
-starting page tasks.
-
-## JSON configuration
-
-Configuration paths are resolved relative to the configuration file. Unknown
-options and invalid values fail before network or output resources are opened.
-Command-line values override only the options explicitly supplied:
-
-```json
-{
-  "urls": ["https://example.com/"],
-  "sitemaps": ["https://example.com/sitemap.xml"],
-  "crawler": {
-    "max_pages": 100,
-    "max_depth": 2,
-    "max_concurrent": 10,
-    "max_concurrent_per_domain": 2,
-    "rate_limit": 2.0,
-    "rate_limit_per_domain": true,
-    "respect_robots": true,
-    "min_delay": 0.0,
-    "jitter": 0.0,
-    "max_retries": 2,
-    "connect_timeout": 10.0,
-    "read_timeout": 30.0,
-    "total_timeout": 60.0
-  },
-  "filters": {
-    "same_domain_only": true,
-    "include": ["/docs/"],
-    "exclude": ["/private/"]
-  },
-  "storage": {
-    "format": "json",
-    "path": "pages.jsonl",
-    "json_lines": true
-  },
-  "logging": {
-    "level": "INFO",
-    "file": "crawlforge.log",
-    "max_bytes": 5000000,
-    "backup_count": 3
-  },
-  "reports": {
-    "json": "results.json",
-    "html": "report.html"
-  }
-}
-```
-
-The `storage.format` value can be `json`, `csv`, or `sqlite`. JSON storage also
-accepts `json_lines`, `indent`, and `encoding`; CSV accepts `encoding`; SQLite
-accepts `batch_size`. Omit `storage` to keep results only in memory. Either
-`urls`, `sitemaps`, or both must contain at least one absolute HTTP URL.
-
-The complete checked example is
-[`examples/advanced_config.json`](examples/advanced_config.json), with a Python
-runner in [`examples/advanced_crawl.py`](examples/advanced_crawl.py).
-
-## Statistics, reports, and live progress
-
-`CrawlerStats` records total, successful, and failed pages; average processing
-speed; elapsed time; HTTP status-code distribution; and the ten busiest
-domains. Live snapshots also include completion percentage, estimated remaining
-time, queued pages, and active page tasks. `AsyncCrawler.get_advanced_stats()`
-exposes these metrics without changing the established `get_stats()` contract.
-`AdvancedCrawler.get_stats()` returns both sets in one mapping.
-
-Every completed page writes an `INFO` progress record containing counts,
-pages/second, percentage, ETA, and active tasks. `configure_logging()` installs
-timestamped console output plus an optional `RotatingFileHandler`; repeated
-configuration replaces only handlers owned by CrawlForge.
-
-`AdvancedCrawler.export_to_json()` writes statistics, successful parsed pages,
-and failures. `export_to_html_report()` creates a standalone escaped HTML file
-with summary cards, status-code and domain bar charts, and success/failure
-tables. `CrawlerStats` also provides statistics-only JSON and HTML exporters.
-
-## Queue-driven website crawling
+The asynchronous crawler remains a standalone public component:
 
 ```python
 import asyncio
@@ -295,406 +244,77 @@ async def main() -> None:
             ["https://example.com"],
             max_pages=50,
             same_domain_only=True,
-            exclude_patterns=[r"/private(?:/|$)"],
         )
 
-    print(f"Processed: {len(pages)} pages")
-    print(f"Failed: {len(crawler.failed_urls)} pages")
+    print(f"Processed: {len(pages)}")
+    print(f"Failed: {len(crawler.failed_urls)}")
 
 
 asyncio.run(main())
 ```
 
-`CrawlerQueue` orders URLs by descending integer priority and preserves
-insertion order when priorities match. It ignores duplicate URLs across queued,
-active, processed, and failed states. `SemaphoreManager` applies both a global
-request limit and an optional per-domain limit while exposing active and peak
-request counts.
+Sitemaps, JSON configuration, statistics, reports, queue behavior, politeness,
+retries, parsing, storage backends, examples, benchmarks, and the full crawler
+CLI are documented in [Crawler and storage](docs/crawler.md).
 
-`AsyncCrawler.crawl()` always processes valid starting URLs. Discovered links
-can be restricted to the starting hostnames with `same_domain_only`, excluded
-by `exclude_patterns`, or admitted only by `include_patterns`. Patterns are
-regular expressions matched against the complete normalized URL. Fragments are
-removed before queueing, and each normalized URL is visited at most once.
+## Security and trust model
 
-Depth zero contains only the starting URLs. Links found on a page at
-`max_depth` are not queued. `max_pages` limits attempted pages exactly; any
-remaining URLs stay visible in queue statistics.
+- The crawler respects robots.txt and applies configured rate limits and
+  retries.
+- MCP indexing allows public HTTP(S) targets only by default.
+- Literal IPs, DNS answers, and every redirect destination pass SSRF checks.
+- Page sizes, robots.txt sizes, crawl duration, page counts, search results,
+  context budgets, and serialized output are bounded.
+- External page text remains untrusted content rather than application or MCP
+  instructions.
+- Source URLs and heading paths remain available as provenance.
 
-The crawler exposes:
+See [MCP server](docs/mcp.md) for the detailed network policy and operation
+limits.
 
-- `visited_urls`, containing every attempted URL;
-- `processed_urls`, mapping successful URLs to structured `ParsedPage` data;
-- `failed_urls`, mapping failed URLs to error descriptions;
-- `get_stats()`, reporting processed, queued, active, failed, visited, and
-  page and request throughput, average request delay, and robots.txt blocks.
+## Current limitations
 
-Progress is logged after every completed page at `INFO` level. The complete
-demonstration accepts one or more starting URLs, shows live progress, and saves
-successful pages, failures, and final statistics as JSON:
+- Lexical BM25 only; no embeddings, vector search, or hybrid search
+- No reranker or generated answers
+- No JavaScript browser rendering
+- Approximate, model-agnostic token estimator
+- SQLite FTS5 is required
+- Local stdio MCP only
+- Negative-query abstention is not calibrated
 
-```bash
-python examples/crawl_site.py https://example.com \
-  --max-depth 2 \
-  --max-pages 50 \
-  --output crawl-output.json
-```
+## Documentation
 
-## Polite request controls
+- [Web-context architecture](docs/web-context.md)
+- [MCP server](docs/mcp.md)
+- [Retrieval evaluation](docs/retrieval-evaluation.md)
+- [Crawler and storage](docs/crawler.md)
 
-`AsyncCrawler` checks robots.txt before each requested URL and each redirect
-destination. Rules are cached by origin for the crawler lifetime. A missing
-robots.txt file permits crawling; authorization failures, server errors, and
-network failures fail closed. Temporary robots.txt server, timeout, and network
-failures use the configured retry strategy before the denial is cached. Blocked
-URLs are logged, returned as empty strings by `fetch_url()`, and recorded in
-`failed_urls` during a crawl.
-
-```python
-crawler = AsyncCrawler(
-    max_concurrent=5,
-    requests_per_second=2.0,
-    respect_robots=True,
-    min_delay=0.5,
-    jitter=0.2,
-    user_agent="MyBot/1.0",
-)
-```
-
-The default request limit is one request per second per domain. Set
-`rate_limit_per_domain=False` to share one global schedule. The effective
-interval is the greatest of the configured rate interval, `min_delay`, and the
-matching robots.txt `Crawl-delay`, plus a random value from zero through
-`jitter`.
-
-Temporary network failures and HTTP 408, 429, 500, 502, 503, and 504 responses
-are retried up to `max_retries`. Backoff starts at `backoff_base`, doubles after
-each failed attempt, and is capped by `backoff_max`. HTTP 500 is limited to one
-retry, while 429 uses a larger backoff and honors a valid `Retry-After` value as
-a lower bound. Concurrency permits and response resources are released before
-the backoff wait.
-
-Pass `user_agents` to rotate a sequence in round-robin order. One User-Agent is
-selected for the complete logical request, including redirect checks and
-retries, so robots.txt evaluation and request headers remain consistent.
-
-`RateLimiter` and `RobotsParser` are also public for applications that need the
-politeness controls independently. `get_stats()` exposes measured
-`requests_per_second`, `average_request_delay`, and `robots_blocked` values.
-
-The self-contained demonstration starts a local site, obeys its crawl delay,
-and shows a disallowed URL being blocked without depending on the public
-internet:
+## Development
 
 ```bash
-python examples/polite_crawl.py
+uv sync --extra dev --extra mcp
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
 ```
 
-## Error handling and retries
-
-`RetryStrategy` runs any asynchronous callable with bounded retries. By
-default, it retries `TransientError` and `NetworkError`; `PermanentError` and
-`ParseError` fail immediately. Per-type retry limits and backoff factors can be
-configured independently:
-
-```python
-from crawlforge import (
-    NetworkError,
-    RetryStrategy,
-    TransientError,
-)
-
-retry_strategy = RetryStrategy(
-    max_retries=3,
-    backoff_factor=1.0,
-    retry_on=[TransientError, NetworkError],
-    retry_limits={TransientError: 3, NetworkError: 2},
-    backoff_factors={TransientError: 1.0, NetworkError: 0.5},
-)
-```
-
-Pass the strategy to `AsyncCrawler(retry_strategy=retry_strategy)` to replace
-the compatibility settings `max_retries`, `backoff_base`, and `backoff_max`.
-Each failed attempt is stored in `error_history` with its type, URL, HTTP
-status, attempt number, retry decision, and next delay. `get_error_stats()`
-returns error totals by type, total and successful retries, average scheduled
-retry delay, and URLs with permanent errors. The same snapshot is available as
-`get_stats()["errors"]`.
-
-HTTP 401, 403, and 404 responses are classified as permanent. HTTP 429, 500,
-502, 503, and 504 responses are transient. Timeouts are transient failures,
-connection and DNS failures are network errors, and decoding or parsing
-failures are parse errors. Task cancellation always propagates.
-
-Connection, socket-read, and total timeouts can be configured independently:
-
-```python
-crawler = AsyncCrawler(
-    connect_timeout=5.0,
-    read_timeout=20.0,
-    total_timeout=30.0,
-    timeout_backoff_factor=1.5,
-)
-```
-
-The timeout budget is multiplied by `timeout_backoff_factor` on every retry.
-The initial attempt uses the configured values unchanged.
-
-The error demonstration starts a local server with 429, 404, 500, and 503
-responses, shows automatic recovery, prints retry statistics, and
-asynchronously saves a JSON report:
-
-```bash
-python examples/error_retries.py --output error-report.json
-```
-
-## Asynchronous HTTP client
-
-```python
-import asyncio
-
-from crawlforge import AsyncCrawler
-
-
-async def main() -> None:
-    urls = [
-        "https://example.com",
-        "https://www.python.org",
-    ]
-
-    async with AsyncCrawler(max_concurrent=5) as crawler:
-        pages = await crawler.fetch_urls(urls)
-
-    for url, content in pages.items():
-        print(url, len(content))
-
-
-asyncio.run(main())
-```
-
-`AsyncCrawler` creates its `aiohttp.ClientSession` lazily and reuses it across
-requests. `max_concurrent` limits both active downloads and the connector pool.
-Connection, socket-read, and total timeouts can be configured with
-`connect_timeout`, `read_timeout`, and `total_timeout`.
-
-HTTP errors, timeouts, and other `aiohttp` client errors are logged and produce
-an empty string for the affected URL, allowing the remaining batch to finish.
-Because an empty successful response has the same representation, applications
-that need richer result metadata should use the log records to distinguish the
-outcome. Task cancellation is not converted into an empty result.
-
-Use the asynchronous context manager when possible. For manual lifecycle
-management, always call `await crawler.close()` in a `finally` block.
-
-## HTML parsing and data extraction
-
-`HTMLParser` extracts page text, metadata, absolute HTTP links, images,
-`h1`–`h3` headings, tables, and ordered or unordered lists. Parsing runs in a
-worker thread so malformed or large documents do not block the event loop.
-
-```python
-import asyncio
-
-from crawlforge import AsyncCrawler
-
-
-async def main() -> None:
-    async with AsyncCrawler() as crawler:
-        page = await crawler.fetch_and_parse("https://example.com")
-
-    print(page["title"])
-    print(page["links"])
-    print(page["metadata"])
-
-
-asyncio.run(main())
-```
-
-`fetch_and_parse()` returns a stable dictionary with `url`, `title`, `text`,
-`links`, `metadata`, `images`, `headings`, `tables`, and `lists`. Relative links
-and image sources are resolved against the final response URL after redirects,
-while the result's `url` field preserves the requested URL. Empty values,
-unsupported schemes, invalid URLs, and duplicate links are excluded; URL
-fragments are removed. External HTTP links are retained.
-
-The parser recovers available data from malformed HTML. If document creation or
-one extractor fails, it logs a warning and returns the fields it could produce.
-A download failure uses the same result shape with empty extracted values.
-
-The HTTP example compares sequential and concurrent downloads and reports the
-status of each request:
-
-```bash
-python examples/async_fetch.py
-```
-
-The parsing example downloads several pages concurrently and prints titles,
-links, headings, and extraction statistics as JSON:
-
-```bash
-python examples/parse_pages.py
-```
-
-The examples access public websites and are intended for manual use. Automated
-tests run only against ephemeral local HTTP servers and in-memory HTML fixtures.
-
-## Asynchronous data storage
-
-Pass a storage backend to `AsyncCrawler` to persist every successfully crawled
-page as soon as parsing finishes:
-
-```python
-import asyncio
-
-from crawlforge import AsyncCrawler, JSONStorage, SQLiteStorage
-
-
-async def main() -> None:
-    json_storage = JSONStorage("results.jsonl")
-    async with AsyncCrawler(storage=json_storage) as crawler:
-        await crawler.crawl(["https://example.com"])
-
-    database = SQLiteStorage("crawler.db", batch_size=100)
-    crawler = AsyncCrawler(storage=database)
-    try:
-        await crawler.crawl(["https://example.com"])
-    finally:
-        await crawler.close()
-
-
-asyncio.run(main())
-```
-
-`JSONStorage` writes one complete object per line by default, allowing large
-outputs to be processed incrementally. Set `json_lines=False, indent=2` for a
-formatted JSON array. `CSVStorage` determines its columns from the standardized
-record, quotes delimiters and line breaks with Python's CSV rules, accepts a
-custom text encoding, and JSON-encodes nested links and metadata.
-
-`SQLiteStorage` creates a `pages` table lazily, indexes URL and crawl timestamp
-columns, and uses configurable `executemany()` batches. A stable hash of the
-complete record deduplicates uncertain retries while retaining later crawls of
-the same URL as separate rows. A short final batch is committed by `close()`.
-The common `DataStorage` interface can be implemented for additional
-destinations with asynchronous `save()` and `close()` methods.
-
-Every stored record contains:
-
-- `url`, `title`, `text`, and `links`;
-- `metadata`;
-- timezone-aware `crawled_at`;
-- the final HTTP `status_code` and normalized `content_type`.
-
-File writes are serialized per backend, and SQLite batches are protected from
-concurrent mutation. Storage cancellation propagates normally. Other write
-errors use bounded exponential-backoff retries, are logged after the last
-attempt, and do not turn an otherwise successful page into a crawl failure.
-`get_stats()` reports `stored`, `storage_retries`, and `storage_errors`.
-`AsyncCrawler.close()` flushes and closes the configured storage along with the
-HTTP session. An exhausted storage close error propagates after the HTTP session
-has been released so an uncommitted final batch cannot be mistaken for success.
-Direct `fetch_url()` and `fetch_and_parse()` calls do not persist data
-automatically.
-
-Retries have at-least-once semantics for custom storage implementations. A
-backend that completes a side effect and then reports an error must deduplicate
-the repeated `save()` call when duplicate output is unacceptable. The built-in
-SQLite backend handles this with record-level idempotency keys.
-
-The self-contained demonstration crawls a local two-page site three times,
-writes each supported format, reads the records back, and prints saved counts
-and titles. Use an empty output directory; the script refuses to overwrite its
-three generated data files:
-
-```bash
-python examples/storage_crawl.py --output-dir storage-output
-```
-
-## Performance benchmark
-
-The deterministic benchmark starts a local threaded HTTP server with a fixed
-5 ms response delay, compares sequential fetch-and-parse work with
-`AsyncCrawler`, and measures asynchronous peak memory with `tracemalloc`. The
-default workloads contain 100, 500, and 1000 unique pages:
-
-```bash
-python examples/performance_benchmark.py
-```
-
-It reports measurements instead of enforcing machine-specific timing
-thresholds. Concurrency correctness and bounded scheduling remain covered by
-event-driven automated tests.
-
-## Requirements
-
-- Python 3.12 or newer
-
-## Development setup
-
-```bash
-git clone <repository-url>
-cd crawlforge
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-```
-
-## Development commands
-
-Run the test suite:
-
-```bash
-python -m pytest
-```
-
-Run linting and formatting checks:
-
-```bash
-ruff check .
-ruff format --check .
-```
-
-Run static type checking:
-
-```bash
-mypy src
-```
-
-GitHub Actions runs the full test suite on Python 3.12, 3.13, and 3.14. Pull
-requests also run linting, formatting, type checking, CLI, dependency, and
-package-build validation.
-
-## Command-line interface
-
-```bash
-python -m crawlforge --help
-python -m crawlforge --version
-python -m crawlforge \
-  --urls https://example.com \
-  --max-pages 100 \
-  --max-depth 2 \
-  --output results.json \
-  --respect-robots \
-  --rate-limit 2
-```
-
-The console-script entry point is also available after installation:
-
-```bash
-crawlforge --help
-crawlforge --config examples/advanced_config.json
-```
-
-The crawl command accepts `--urls`, `--max-pages`, `--max-depth`,
-`--max-concurrent`, `--output`, `--html-report`, `--config`,
-`--respect-robots`/`--no-respect-robots`, `--rate-limit`, `--log-file`, and
-`--log-level`. At least `--urls` or `--config` is required to start work.
-Without either, the command prints help and exits successfully.
+GitHub Actions runs the test suite on Python 3.12, 3.13, and 3.14, with
+linting, formatting, type checking, CLI, dependency, and package-build checks.
+
+## Roadmap
+
+- Semantic embeddings baseline
+- BM25 versus semantic comparison
+- Hybrid retrieval
+- Reranking
+- Calibrated negative-query abstention
+- Larger real-world evaluation corpora
+- Optional browser rendering
+
+These items describe possible next evaluations and extensions, not committed
+release dates.
 
 ## License
 
 Distributed under the [MIT License](LICENSE).
-
-[ci-badge]: https://github.com/MakarenD/crawlforge/actions/workflows/ci.yml/badge.svg
-[ci-workflow]: https://github.com/MakarenD/crawlforge/actions/workflows/ci.yml
