@@ -96,5 +96,9 @@ jobs:
           tests/test_semantic_models.py
           tests/test_semantic_provider.py
           tests/test_semantic_engine.py
+          tests/test_hybrid_fusion.py
+          tests/test_hybrid_retriever.py
+          tests/test_evaluation_hybrid_strategy.py
           tests/test_evaluation_comparison.py
+          tests/test_evaluation_multi_comparison.py
           tests/test_evaluation_cli.py

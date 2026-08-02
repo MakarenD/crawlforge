@@ -44,12 +44,15 @@ def render_markdown_report(run: EvaluationRun) -> str:
     limits = tuple(raw_limits)
     focus_limit = 5 if 5 in limits else max(limits)
     is_semantic = run.retrieval_strategy.startswith("semantic")
+    is_hybrid = run.retrieval_strategy.startswith("hybrid")
+    if is_hybrid:
+        title = "# CrawlForge Hybrid RRF Retrieval Baseline"
+    elif is_semantic:
+        title = "# CrawlForge Semantic Retrieval Baseline"
+    else:
+        title = "# CrawlForge BM25 Retrieval Baseline"
     lines = [
-        (
-            "# CrawlForge Semantic Retrieval Baseline"
-            if is_semantic
-            else "# CrawlForge BM25 Retrieval Baseline"
-        ),
+        title,
         "",
         "## Dataset",
         "",
@@ -297,7 +300,23 @@ def render_markdown_report(run: EvaluationRun) -> str:
         lines.append(f"- Warning: {_escape(warning)}")
     for failure in run.failures:
         lines.append(f"- Failure: {_escape(failure)}")
-    if is_semantic:
+    if is_hybrid:
+        lines.extend(
+            [
+                "",
+                "## Hybrid baseline interpretation",
+                "",
+                (
+                    "This is a fixed equal-weight Reciprocal Rank Fusion baseline. "
+                    "It combines BM25 and semantic ranks without treating either "
+                    "raw score as calibrated confidence. Interpret improvements and "
+                    "regressions through the checked three-strategy comparison; this "
+                    "run does not include reranking or a negative-query threshold."
+                ),
+                "",
+            ]
+        )
+    elif is_semantic:
         lines.extend(
             [
                 "",
@@ -436,7 +455,11 @@ def _semantic_conclusion(run: EvaluationRun, focus_limit: int) -> str:
 
 def _json_compatible(value: object) -> object:
     if isinstance(value, dict):
-        return {str(key): _json_compatible(item) for key, item in value.items()}
+        return {
+            str(key): _json_compatible(item)
+            for key, item in value.items()
+            if not (key == "strategy_metadata" and item == {})
+        }
     if isinstance(value, (list, tuple)):
         return [_json_compatible(item) for item in value]
     if value is None or isinstance(value, (str, int, float, bool)):
