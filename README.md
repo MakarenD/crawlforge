@@ -13,10 +13,10 @@ AI agents often receive complete HTML pages containing navigation, scripts,
 repeated layout blocks, and irrelevant sections. CrawlForge performs
 deterministic processing locally and returns a bounded set of source-linked
 chunks ranked for relevance. BM25 is the default; optional local semantic
-retrieval uses pinned Sentence Transformers embeddings and exact cosine search.
-The checked baselines below make both strategies' limitations visible. Python
-and the CLI support both strategies, while the local MCP stdio server remains
-lexical.
+retrieval uses pinned Sentence Transformers embeddings and exact cosine search,
+and hybrid retrieval combines both rankings with Reciprocal Rank Fusion. The
+checked baselines below make all three strategies' limitations visible. Python
+and the CLI support all three, while the local MCP stdio server remains lexical.
 
 ## How it works
 
@@ -28,9 +28,13 @@ flowchart LR
     D --> E[SQLite FTS5 / BM25]
     D --> H[Optional float32 embeddings]
     H --> I[Exact cosine search]
+    E --> J[Reciprocal Rank Fusion]
+    I --> J
     E --> F[Token-budgeted context]
     I --> F
-    F --> G[Python / CLI / MCP]
+    J --> F
+    F --> G[Python / CLI]
+    E --> M[Lexical MCP]
 ```
 
 Unlike a crawler that stops after downloading or extracting pages, CrawlForge
@@ -46,6 +50,7 @@ to an external retrieval service.
 - Deterministic content cleaning and heading-aware chunking
 - Local deduplicated SQLite FTS5/BM25 index
 - Optional local Sentence Transformers embeddings and exact cosine retrieval
+- Deterministic BM25-plus-semantic Reciprocal Rank Fusion
 - Token-budgeted context with source provenance
 - Local MCP stdio integration with bounded typed outputs
 - Deterministic offline retrieval evaluation
@@ -119,9 +124,10 @@ The base package never imports the ML stack. On Intel macOS, the current
 upstream PyTorch wheels limit the semantic extra to Python 3.12; the base
 package remains supported on Python 3.12–3.14.
 
-## Optional semantic retrieval
+## Optional semantic and hybrid retrieval
 
-Build embeddings after the lexical index exists, then opt into semantic search:
+Build embeddings after the lexical index exists, then opt into semantic or
+rank-fused hybrid search:
 
 ```bash
 uv run --extra semantic crawlforge embed \
@@ -133,13 +139,21 @@ uv run --extra semantic crawlforge search \
   --database .crawlforge/index.db \
   --strategy semantic \
   --limit 5
+
+uv run --extra semantic crawlforge search \
+  "How does the crawler avoid overwhelming a host?" \
+  --database .crawlforge/index.db \
+  --strategy hybrid \
+  --limit 5
 ```
 
 The default model is pinned to an immutable
 `sentence-transformers/all-MiniLM-L6-v2` revision. Vectors remain in the local
 SQLite index as normalized float32 blobs; model files stay in the normal model
 cache. See [Semantic retrieval](docs/semantic-retrieval.md) for the Python API,
-cache invalidation, storage and latency costs, and score limitations.
+cache invalidation, storage and latency costs, and score limitations. See
+[Hybrid retrieval](docs/hybrid-retrieval.md) for RRF, contribution evidence,
+strict failure behavior, and bounded hybrid context.
 
 ## MCP integration
 
@@ -194,36 +208,40 @@ sections, 50 indexed chunks, 64 queries, 114 positive judgments, and 8 query
 categories.
 
 Aggregate results from the current frozen-dataset
-[paired report](reports/bm25-vs-semantic.md):
+[three-strategy report](reports/bm25-vs-semantic-vs-hybrid.md):
 
-| Metric | BM25 | Semantic | Delta |
+| Metric | BM25 | Semantic | Hybrid |
 | --- | ---: | ---: | ---: |
-| Hit Rate@5 | 96.4% | 98.2% | +1.8 pp |
-| Recall@5 | 80.2% | 82.3% | +2.1 pp |
-| MRR | 0.8681 | 0.8563 | -0.0118 |
-| NDCG@5 | 0.8100 | 0.8102 | +0.0002 |
-| Negative no-result accuracy | 12.5% | 0.0% | -12.5 pp |
+| Hit Rate@5 | 0.9643 | 0.9821 | 0.9821 |
+| Precision@5 | 0.2893 | 0.3071 | 0.3250 |
+| Recall@5 | 0.8021 | 0.8229 | 0.8705 |
+| MRR | 0.8681 | 0.8563 | 0.8810 |
+| MAP@5 | 0.7294 | 0.6970 | 0.7608 |
+| NDCG@5 | 0.8100 | 0.8102 | 0.8546 |
+| Negative no-result accuracy | 0.1250 | 0.0000 | 0.0000 |
 
 Selected category MRR:
 
-| Category | BM25 | Semantic | Delta |
+| Category | BM25 | Semantic | Hybrid |
 | --- | ---: | ---: | ---: |
-| Exact term | 1.0000 | 0.8125 | -0.1875 |
-| Code symbol | 1.0000 | 0.8438 | -0.1562 |
-| Paraphrase | 0.7639 | 0.8542 | +0.0903 |
-| Conceptual | 0.7083 | 0.9062 | +0.1979 |
-| Ambiguous | 0.6667 | 0.6708 | +0.0042 |
+| Exact term | 1.0000 | 0.8125 | 0.9167 |
+| Code symbol | 1.0000 | 0.8438 | 1.0000 |
+| Paraphrase | 0.7639 | 0.8542 | 0.7917 |
+| Conceptual | 0.7083 | 0.9062 | 0.8125 |
+| Ambiguous | 0.6667 | 0.6708 | 0.7083 |
 
-Semantic retrieval improved paraphrase and conceptual queries but regressed
-exact terms, code symbols, aggregate MRR, and strict negative-query behavior.
-It won 15 queries while BM25 won 21. This small synthetic English dataset is
-useful for deterministic regression analysis, not broad external validity.
-Neither BM25 nor cosine scores are calibrated confidence, and latency is
+Fixed equal-weight RRF improved aggregate Recall@5, MRR, MAP@5, and NDCG@5,
+but it did not preserve BM25's strict negative-query behavior and it regressed
+some individual lexical and semantic wins. This small synthetic English dataset
+is useful for deterministic regression analysis, not broad external validity.
+None of the component or fused scores is calibrated confidence, and latency is
 machine-dependent.
 
 See the [BM25](reports/bm25-baseline.md) and
 [semantic](reports/semantic-baseline.md) reports, the complete
-[paired comparison](reports/bm25-vs-semantic.md), and the
+[hybrid](reports/hybrid-baseline.md) baseline, the legacy
+[paired comparison](reports/bm25-vs-semantic.md), the full
+[three-strategy comparison](reports/bm25-vs-semantic-vs-hybrid.md), and the
 [evaluation methodology](docs/retrieval-evaluation.md).
 
 ## Python API
@@ -260,7 +278,8 @@ asyncio.run(main())
 
 `SearchHit.bm25_score` is the raw SQLite FTS5 score; lower values are more
 relevant. Semantic results expose descending cosine similarity and model
-identity through separate typed models. See
+identity through separate typed models. `HybridRetriever` exposes final RRF
+scores while preserving both component ranks and raw scores as evidence. See
 [Web-context architecture](docs/web-context.md) for processing, chunking,
 schema, deduplication, migrations, and metrics.
 
@@ -315,7 +334,7 @@ limits.
 ## Current limitations
 
 - Exact semantic scan is linear in chunk count and embedding dimension
-- No hybrid retrieval, reranking, or calibrated abstention threshold
+- Fixed equal-weight hybrid fusion; no reranking or calibrated abstention
 - No generated answers
 - No JavaScript browser rendering
 - Approximate, model-agnostic token estimator
@@ -330,6 +349,7 @@ limits.
 - [MCP server](docs/mcp.md)
 - [Retrieval evaluation](docs/retrieval-evaluation.md)
 - [Semantic retrieval](docs/semantic-retrieval.md)
+- [Hybrid retrieval](docs/hybrid-retrieval.md)
 - [Crawler and storage](docs/crawler.md)
 
 ## Development
@@ -344,12 +364,11 @@ uv run mypy src
 
 GitHub Actions runs the base test suite on Python 3.12, 3.13, and 3.14, with
 linting, formatting, type checking, CLI, dependency, and package-build checks.
-An offline Python 3.12 job installs the semantic extra and runs
-controlled-vector tests without downloading a model.
+An offline Python 3.12 job installs the semantic extra and runs deterministic
+semantic and hybrid controlled-vector tests without downloading a model.
 
 ## Roadmap
 
-- Hybrid retrieval
 - Reranking
 - Calibrated negative-query abstention
 - Larger real-world evaluation corpora

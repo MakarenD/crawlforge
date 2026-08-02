@@ -5,26 +5,27 @@ benchmark asks whether the index returned the right source sections, how early
 they appeared, and how much irrelevant context was included. It does not claim
 that a downstream generated answer is correct, faithful, or useful.
 
-The benchmark compares deterministic SQLite FTS5/BM25 with optional local
-semantic retrieval:
+The benchmark compares deterministic SQLite FTS5/BM25, optional local semantic
+retrieval, and fixed rank-fused hybrid retrieval:
 
 ```text
 versioned local corpus
     -> ContentProcessor
     -> TextChunker
     -> ContextEngine indexing
-    -> public BM25 or semantic ContextEngine search
+    -> public BM25, semantic, or hybrid application service
     -> stable relevance matching
     -> retrieval and context metrics
     -> JSON or Markdown report
 ```
 
 Evaluation lives in `crawlforge.evaluation`. It does not execute retrieval SQL
-or reimplement either ranking. `BM25ContextEngineStrategy` and
-`SemanticContextEngineStrategy` adapt public engine results into a
-strategy-neutral `RetrievedItem`. Future hybrid or reranked implementations can
-use the same `RetrievalStrategy` protocol, dataset, judgments, metrics, and
-reporters.
+or reimplement any ranking. `BM25ContextEngineStrategy`,
+`SemanticContextEngineStrategy`, and `HybridContextEngineStrategy` adapt public
+results into a strategy-neutral `RetrievedItem`. The hybrid evaluator receives
+the already fused production ranking; it does not implement RRF. Future
+reranked implementations can use the same `RetrievalStrategy` protocol,
+dataset, judgments, metrics, and reporters.
 
 ## Offline dataset
 
@@ -258,7 +259,7 @@ configuration, paths, or dataset structure use the established CLI error code
 writes the report and returns code 1. Diagnostic output is not mixed into JSON
 standard output.
 
-## Semantic baseline and paired comparison
+## Semantic and hybrid baselines
 
 The semantic baseline uses the production provider and exact search path, not
 test vectors. Install the optional runtime and run the pinned model on CPU:
@@ -309,6 +310,61 @@ conceptual category MRR while regressing exact terms and code symbols. See the
 [semantic report](../reports/semantic-baseline.md), and
 [paired report](../reports/bm25-vs-semantic.md).
 
+Build the fixed hybrid baseline through the production `HybridRetriever`:
+
+```bash
+uv run --extra semantic crawlforge evaluate run \
+  --strategy hybrid \
+  --dataset benchmarks/retrieval \
+  --database .crawlforge/hybrid-evaluation.db \
+  --output reports/hybrid-baseline.json \
+  --format json \
+  --limit-values 1,3,5,10 \
+  --token-budget 3000 \
+  --repeat-latency 5 \
+  --device cpu
+```
+
+The generic comparison accepts two or more unique strategies. The exact legacy
+`bm25,semantic` invocation retains its original schema; the canonical triple
+uses the versioned multi-comparison schema:
+
+```bash
+uv run --extra semantic crawlforge evaluate compare \
+  --strategies bm25,semantic,hybrid \
+  --dataset benchmarks/retrieval \
+  --database .crawlforge/evaluation-compare.db \
+  --output reports/bm25-vs-semantic-vs-hybrid.md \
+  --format markdown \
+  --limit-values 1,3,5,10 \
+  --token-budget 3000 \
+  --repeat-latency 5 \
+  --bootstrap-samples 5000 \
+  --bootstrap-seed 20260729 \
+  --device cpu
+```
+
+| Metric | BM25 | Semantic | Hybrid |
+| --- | ---: | ---: | ---: |
+| Hit@5 | 0.9643 | 0.9821 | 0.9821 |
+| Precision@5 | 0.2893 | 0.3071 | 0.3250 |
+| Recall@5 | 0.8021 | 0.8229 | 0.8705 |
+| MRR | 0.8681 | 0.8563 | 0.8810 |
+| MAP@5 | 0.7294 | 0.6970 | 0.7608 |
+| NDCG@5 | 0.8100 | 0.8102 | 0.8546 |
+| Negative no-result accuracy | 0.1250 | 0.0000 | 0.0000 |
+
+The multi-strategy report keeps complete per-query final rankings and adds
+diagnostic, non-standard measures: BM25/semantic overlap at K=1, 3, 5, and 10;
+unique relevant coverage; a ground-truth oracle union; fusion recovery;
+component contribution and retention summaries; named query outcome buckets;
+and paired bootstrap intervals. The oracle uses judgments and cannot be used at
+search time. The fixed RRF baseline recovered 19 of 23 component-only relevant
+judgments at K=5, while all eight negative queries still received results.
+See the [hybrid implementation](hybrid-retrieval.md),
+[hybrid report](../reports/hybrid-baseline.md), and
+[three-strategy comparison](../reports/bm25-vs-semantic-vs-hybrid.md).
+
 ## Reading reports
 
 The JSON report contains:
@@ -325,9 +381,9 @@ The JSON report contains:
 The Markdown strategy reports present the same run as overall and category
 tables, strongest and weakest queries, false positives, false negatives,
 latency, context efficiency, limitations, and a bounded strategy-specific
-conclusion. Paired reports keep comparison evidence separate from either
-strategy's own ranking. Reports omit dataset, database, cache, and output
-machine paths.
+conclusion. Pair and multi-strategy reports keep comparison evidence separate
+from each strategy's own ranking. Reports omit dataset, database, cache, and
+output machine paths.
 
 ## Extending the benchmark
 
@@ -364,15 +420,16 @@ Return items in strategy rank order with stable source provenance. The
 evaluator does not sort by score. Keep the same dataset version and judgments
 when comparing BM25, vector, hybrid, or reranked results.
 
-## Hybrid-search decision boundary
+## Decision boundary after fixed RRF
 
-This stage includes independent BM25 and semantic baselines, but no fusion,
-reranking, answer generation, or LLM judge. The paired evidence justifies a
-future hybrid experiment because semantic retrieval materially improves
-paraphrase and conceptual MRR. It does not justify replacing BM25: exact terms,
-code symbols, aggregate MRR, and strict negative-query behavior regress.
+This stage adds deterministic equal-weight rank fusion, but no reranking,
+learned weights, answer generation, LLM judge, or calibrated abstention. Hybrid
+improved aggregate Recall@5, MRR, MAP@5, and NDCG@5 on this frozen corpus, yet
+it regressed individual BM25 and semantic wins and returned candidates for all
+negative queries. The small synthetic sample does not establish generalization.
 
-Any hybrid stage should keep this dataset and ground truth frozen, preserve
-separate failure evidence, and test whether fusion retains BM25's lexical
-strength while recovering semantic vocabulary mismatches. Short ambiguous and
-negative queries remain separate calibration problems.
+The next evidence-producing step should be a larger real-world benchmark.
+Reranking is justified only if candidate-union analysis shows relevant chunks
+that RRF consistently orders poorly. Abstention needs a separate calibration
+dataset, risk/coverage analysis, and a clarification policy rather than a
+threshold fitted to these eight negative queries.
