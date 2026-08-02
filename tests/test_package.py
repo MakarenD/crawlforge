@@ -20,6 +20,10 @@ from crawlforge import (
     FTS5UnavailableError,
     HeuristicTokenEstimator,
     HTMLParser,
+    HybridContextResult,
+    HybridRetriever,
+    HybridSearchConfig,
+    HybridSearchHit,
     IndexInfo,
     IndexingResult,
     IndexSessionSummary,
@@ -27,7 +31,9 @@ from crawlforge import (
     NetworkError,
     ParseError,
     PermanentError,
+    RankFusionStrategy,
     RateLimiter,
+    ReciprocalRankFusion,
     RetryStrategy,
     RobotsParser,
     SearchHit,
@@ -108,6 +114,16 @@ def test_web_context_types_are_exposed() -> None:
     assert ContextEngine.__name__ == "ContextEngine"
     assert URLNetworkPolicy.__name__ == "URLNetworkPolicy"
     assert URLPolicyError.__name__ == "URLPolicyError"
+
+
+def test_hybrid_retrieval_types_are_exposed() -> None:
+    """The package root exposes fusion without importing the ML runtime."""
+    assert HybridRetriever.__name__ == "HybridRetriever"
+    assert ReciprocalRankFusion.__name__ == "ReciprocalRankFusion"
+    assert HybridSearchConfig.__name__ == "HybridSearchConfig"
+    assert HybridSearchHit.__name__ == "HybridSearchHit"
+    assert HybridContextResult.__name__ == "HybridContextResult"
+    assert RankFusionStrategy.__name__ == "RankFusionStrategy"
 
 
 def test_base_package_import_does_not_load_optional_ml_runtime() -> None:
