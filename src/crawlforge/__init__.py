@@ -22,6 +22,21 @@ from crawlforge.context_models import (
 )
 from crawlforge.crawler import AsyncCrawler, CrawledPage, CrawlStats, PageHandler
 from crawlforge.errors import NetworkError, ParseError, PermanentError, TransientError
+from crawlforge.hybrid import HybridRetriever, ReciprocalRankFusion
+from crawlforge.hybrid_models import (
+    FusedCandidate,
+    HybridContextResult,
+    HybridIndexReadiness,
+    HybridRetrievalError,
+    HybridSearchConfig,
+    HybridSearchHit,
+    HybridSearchMetrics,
+    HybridSearchResult,
+    RankContribution,
+    RankedCandidate,
+    RankedCandidateList,
+    RankFusionStrategy,
+)
 from crawlforge.network_policy import URLNetworkPolicy, URLPolicyError
 from crawlforge.parser import HTMLParser, ParsedPage
 from crawlforge.politeness import RateLimiter, RobotsData, RobotsParser
@@ -91,8 +106,17 @@ __all__ = [
     "EmbeddingVector",
     "ErrorRecord",
     "FTS5UnavailableError",
+    "FusedCandidate",
     "HTMLParser",
     "HeuristicTokenEstimator",
+    "HybridContextResult",
+    "HybridIndexReadiness",
+    "HybridRetrievalError",
+    "HybridRetriever",
+    "HybridSearchConfig",
+    "HybridSearchHit",
+    "HybridSearchMetrics",
+    "HybridSearchResult",
     "IndexInfo",
     "IndexSessionSummary",
     "IndexingResult",
@@ -106,6 +130,11 @@ __all__ = [
     "QueueStats",
     "QUERY_FORMAT_VERSION",
     "RateLimiter",
+    "RankContribution",
+    "RankedCandidate",
+    "RankedCandidateList",
+    "RankFusionStrategy",
+    "ReciprocalRankFusion",
     "RetryStats",
     "RetryStrategy",
     "ReportConfig",

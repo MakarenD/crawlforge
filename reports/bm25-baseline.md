@@ -7,7 +7,7 @@
 - Signature: `bb1bf9a8b79f7b47f2850aac362f144d7984196648f592716c7e0d33ff00acfd`
 - Retrieval strategy: `bm25-fts5`
 - Queries: 64
-- Timestamp: `2026-07-29T14:49:42.794465+00:00`
+- Timestamp: `2026-08-02T08:24:01.392282+00:00`
 
 ## Corpus statistics
 
@@ -20,7 +20,7 @@
 | Cleaned bytes | 25641 |
 | Approximate source tokens | 8407 |
 | Approximate cleaned tokens | 6406 |
-| Corpus processing and indexing | 26.965 ms |
+| Corpus processing and indexing | 29.427 ms |
 
 ## Chunking configuration
 
@@ -146,7 +146,7 @@ Indexing is excluded. These timings are machine-specific and are not a portable 
 
 | Samples | Repeats/query | Warm-ups | Mean | Median | P95 | Maximum |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 320 | 5 | 3 | 0.454 ms | 0.481 ms | 0.686 ms | 3.928 ms |
+| 320 | 5 | 3 | 0.480 ms | 0.499 ms | 0.775 ms | 1.211 ms |
 
 ## CrawlForge-specific context efficiency
 

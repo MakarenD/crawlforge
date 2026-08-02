@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -104,6 +104,7 @@ class RetrievedItem:
     content_hash: str
     relevance_grade: int = 0
     matched_judgment_id: str | None = None
+    strategy_metadata: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

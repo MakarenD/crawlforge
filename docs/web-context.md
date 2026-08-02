@@ -70,6 +70,9 @@ Optional semantic methods reuse the same engine and provenance boundary:
 `index_embeddings()`, `semantic_search()`, and
 `build_semantic_context()`. They require an explicit `EmbeddingProvider`;
 details are in [Local semantic retrieval](semantic-retrieval.md).
+`HybridRetriever` composes the public lexical and semantic methods with rank
+fusion, then reuses the same bounded context selector. It does not access FTS5
+or embedding storage directly; see [Hybrid retrieval](hybrid-retrieval.md).
 
 ## CLI
 
@@ -239,9 +242,10 @@ The default retrieval path is still the lexical baseline:
 - SQLite FTS5 must be available in the active Python SQLite build.
 
 The optional semantic path provides local embeddings and a linear exact scan,
-not an approximate vector database. There is no hybrid retrieval, reranker,
-hosted embedding call, generated answer, browser rendering, or remote HTTP
-service. The local MCP stdio adapter reuses the stable `ContextEngine` boundary
-but exposes only BM25; it does not duplicate crawling, cleaning, chunking, SQL,
-or ranking. See [`mcp.md`](mcp.md) for its fixed configuration, security model,
-and four bounded tools.
+not an approximate vector database. Hybrid search adds fixed rank fusion, not a
+reranker, learned weights, score calibration, hosted embedding call, generated
+answer, browser rendering, or remote HTTP service. The local MCP stdio adapter
+reuses the stable `ContextEngine` boundary but exposes only BM25; it does not
+duplicate crawling, cleaning, chunking, SQL, or ranking. See
+[`mcp.md`](mcp.md) for its fixed configuration, security model, and four
+bounded tools.

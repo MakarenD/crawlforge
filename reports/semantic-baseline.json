@@ -449,7 +449,7 @@
     "cleaned_estimated_tokens": 6406,
     "cleaned_size_bytes": 25641,
     "document_count": 10,
-    "indexing_time_ms": 24.07229199889116,
+    "indexing_time_ms": 36.67358300299384,
     "section_count": 40,
     "source_estimated_tokens": 8407,
     "source_size_bytes": 33655
@@ -459,10 +459,10 @@
   "dataset_version": "1.0.0",
   "failures": [],
   "latency": {
-    "maximum_ms": 12.304000003496185,
-    "mean_ms": 8.749183491181611,
-    "median_ms": 8.71729152277112,
-    "p95_ms": 10.644999973010272,
+    "maximum_ms": 38.7811669788789,
+    "mean_ms": 18.35334191291622,
+    "median_ms": 16.467041496071033,
+    "p95_ms": 27.827417012304068,
     "repeat_count": 5,
     "sample_count": 320,
     "warmup_count": 3
@@ -504,11 +504,11 @@
       "irrelevant_estimated_token_ratio": 0.903010033444816,
       "irrelevant_estimated_tokens": 1350,
       "latency_samples_ms": [
-        9.333750000223517,
-        9.205666981870309,
-        9.024833998410031,
-        9.330457978649065,
-        11.119083996163681
+        14.882457995554432,
+        13.784542010398582,
+        16.463125008158386,
+        13.989333005156368,
+        14.506499981507659
       ],
       "metrics": {
         "average_precision_at": {
@@ -792,11 +792,11 @@
       "irrelevant_estimated_token_ratio": 0.802054794520548,
       "irrelevant_estimated_tokens": 1171,
       "latency_samples_ms": [
-        8.123334002448246,
-        8.736208983464167,
-        8.035915991058573,
-        6.885957991471514,
-        8.179166994523257
+        13.551417010603473,
+        14.802083984250203,
+        13.95783299813047,
+        14.591041981475428,
+        14.797000010730699
       ],
       "metrics": {
         "average_precision_at": {
@@ -1068,11 +1068,11 @@
       "irrelevant_estimated_token_ratio": 0.8830584707646177,
       "irrelevant_estimated_tokens": 1178,
       "latency_samples_ms": [
-        9.14804101921618,
-        7.144250004785135,
-        9.346792008727789,
-        8.653875003801659,
-        8.34374999976717
+        14.641457994002849,
+        16.824915976030752,
+        14.40891600213945,
+        12.006833014311269,
+        13.392583001405
       ],
       "metrics": {
         "average_precision_at": {
@@ -1355,11 +1355,11 @@
       "irrelevant_estimated_token_ratio": 0.7811614730878187,
       "irrelevant_estimated_tokens": 1103,
       "latency_samples_ms": [
-        8.603624999523163,
-        7.319417025428265,
-        7.872457994380966,
-        8.553499996196479,
-        9.38449997920543
+        16.838875017128885,
+        14.769667002838105,
+        15.593666001223028,
+        24.31658300338313,
+        14.389124989975244
       ],
       "metrics": {
         "average_precision_at": {
@@ -1631,11 +1631,11 @@
       "irrelevant_estimated_token_ratio": 0.8857578065498858,
       "irrelevant_estimated_tokens": 1163,
       "latency_samples_ms": [
-        9.271125018130988,
-        9.817542013479397,
-        8.260959002655,
-        9.195542021188885,
-        8.069541014265269
+        15.525916998740286,
+        16.47095798398368,
+        13.89391699922271,
+        14.743584004463628,
+        14.621124981204048
       ],
       "metrics": {
         "average_precision_at": {
@@ -1918,11 +1918,11 @@
       "irrelevant_estimated_token_ratio": 0.7836538461538461,
       "irrelevant_estimated_tokens": 1141,
       "latency_samples_ms": [
-        7.773082994390279,
-        7.72649998543784,
-        8.115750009892508,
-        7.291457994142547,
-        7.965291995787993
+        16.542958008358255,
+        13.7772909947671,
+        16.61899997270666,
+        12.538250011857599,
+        15.538707986706868
       ],
       "metrics": {
         "average_precision_at": {
@@ -2206,11 +2206,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1344,
       "latency_samples_ms": [
-        8.207583014154807,
-        10.022749978816137,
-        8.748708001803607,
-        9.342291014036164,
-        9.840707993134856
+        14.068709017010406,
+        14.338542008772492,
+        13.443000003462657,
+        15.197750006336719,
+        15.547916002105922
       ],
       "metrics": {
         "average_precision_at": {
@@ -2484,11 +2484,11 @@
       "irrelevant_estimated_token_ratio": 0.8927631578947368,
       "irrelevant_estimated_tokens": 1357,
       "latency_samples_ms": [
-        8.385458000702783,
-        9.102082985918969,
-        7.957750000059605,
-        8.313541999086738,
-        7.8835419844836
+        15.397583018057048,
+        13.85149999987334,
+        15.432707994477823,
+        14.79395799105987,
+        14.916208980139345
       ],
       "metrics": {
         "average_precision_at": {
@@ -2760,11 +2760,11 @@
       "irrelevant_estimated_token_ratio": 0.8831615120274914,
       "irrelevant_estimated_tokens": 1285,
       "latency_samples_ms": [
-        8.757792005781084,
-        9.229832998244092,
-        9.518833976471797,
-        8.076917001744732,
-        7.883666025009006
+        15.15637498232536,
+        13.435291009955108,
+        16.518000018550083,
+        17.060833022696897,
+        17.11479199002497
       ],
       "metrics": {
         "average_precision_at": {
@@ -3035,11 +3035,11 @@
       "irrelevant_estimated_token_ratio": 0.8720066061106524,
       "irrelevant_estimated_tokens": 1056,
       "latency_samples_ms": [
-        8.554125000955537,
-        10.956166021060199,
-        8.702457998879254,
-        8.55441699968651,
-        8.657667000079527
+        14.44237501709722,
+        16.035540989832953,
+        16.782207996584475,
+        16.635374980978668,
+        23.272708000149578
       ],
       "metrics": {
         "average_precision_at": {
@@ -3309,11 +3309,11 @@
       "irrelevant_estimated_token_ratio": 0.9,
       "irrelevant_estimated_tokens": 1314,
       "latency_samples_ms": [
-        8.954041986726224,
-        9.028500004205853,
-        7.240291015477851,
-        8.100250008283183,
-        7.028749998426065
+        15.70966700091958,
+        15.057707991218194,
+        14.131708012428135,
+        12.844334007240832,
+        14.856041001621634
       ],
       "metrics": {
         "average_precision_at": {
@@ -3585,11 +3585,11 @@
       "irrelevant_estimated_token_ratio": 0.8881481481481481,
       "irrelevant_estimated_tokens": 1199,
       "latency_samples_ms": [
-        9.112583997193724,
-        8.867208991432562,
-        9.915333008393645,
-        10.776707989862189,
-        8.87870800215751
+        14.51545799500309,
+        15.445583005202934,
+        14.661125023849308,
+        14.054790983209386,
+        15.402874996652827
       ],
       "metrics": {
         "average_precision_at": {
@@ -3860,11 +3860,11 @@
       "irrelevant_estimated_token_ratio": 0.8911155644622578,
       "irrelevant_estimated_tokens": 1334,
       "latency_samples_ms": [
-        8.677666017320007,
-        8.524166973074898,
-        8.956249977927655,
-        7.849249988794327,
-        8.018334017833695
+        14.92312498157844,
+        16.74724998883903,
+        17.02058399678208,
+        16.420041996752843,
+        13.540084008127451
       ],
       "metrics": {
         "average_precision_at": {
@@ -4148,11 +4148,11 @@
       "irrelevant_estimated_token_ratio": 0.7848006019563581,
       "irrelevant_estimated_tokens": 1043,
       "latency_samples_ms": [
-        7.993959006853402,
-        8.96412500878796,
-        8.504917001118883,
-        7.942292024381459,
-        6.835499982116744
+        13.220957975136116,
+        13.134125008946285,
+        14.955042017390952,
+        15.581541025312617,
+        14.252084016334265
       ],
       "metrics": {
         "average_precision_at": {
@@ -4423,11 +4423,11 @@
       "irrelevant_estimated_token_ratio": 0.8884364820846905,
       "irrelevant_estimated_tokens": 1091,
       "latency_samples_ms": [
-        7.67958298092708,
-        6.865541014121845,
-        6.901999993715435,
-        7.366749981883913,
-        8.269999991171062
+        17.17570799519308,
+        13.021499995375052,
+        14.104832982411608,
+        14.520834025461227,
+        16.801541001768783
       ],
       "metrics": {
         "average_precision_at": {
@@ -4697,11 +4697,11 @@
       "irrelevant_estimated_token_ratio": 0.8858647936786654,
       "irrelevant_estimated_tokens": 1009,
       "latency_samples_ms": [
-        8.996999997179955,
-        8.99270799709484,
-        8.953709009801969,
-        10.298624983988702,
-        8.92095800372772
+        16.271667002001777,
+        16.392707999330014,
+        16.550041997106746,
+        13.34045801195316,
+        14.845999976387247
       ],
       "metrics": {
         "average_precision_at": {
@@ -4970,11 +4970,11 @@
       "irrelevant_estimated_token_ratio": 0.8861911987860395,
       "irrelevant_estimated_tokens": 1168,
       "latency_samples_ms": [
-        8.761332981521264,
-        8.68037500185892,
-        8.286917000077665,
-        8.167208026861772,
-        8.540125010767952
+        16.547584004001692,
+        14.843374985503033,
+        15.513916994677857,
+        15.114332985831425,
+        15.295749995857477
       ],
       "metrics": {
         "average_precision_at": {
@@ -5257,11 +5257,11 @@
       "irrelevant_estimated_token_ratio": 0.7782426778242678,
       "irrelevant_estimated_tokens": 1116,
       "latency_samples_ms": [
-        8.995833020890132,
-        8.990165981231257,
-        9.154583007330075,
-        9.055958013050258,
-        9.197000006679446
+        15.840667008887976,
+        17.547499999636784,
+        16.074957995442674,
+        16.458625002996996,
+        13.771458005066961
       ],
       "metrics": {
         "average_precision_at": {
@@ -5533,11 +5533,11 @@
       "irrelevant_estimated_token_ratio": 0.9026369168356998,
       "irrelevant_estimated_tokens": 1335,
       "latency_samples_ms": [
-        7.663041993509978,
-        7.294208015082404,
-        8.158959011780098,
-        9.287916996981949,
-        9.224582987371832
+        14.447667024796829,
+        13.948000007076189,
+        12.364041991531849,
+        12.781875004293397,
+        14.283667027484626
       ],
       "metrics": {
         "average_precision_at": {
@@ -5809,11 +5809,11 @@
       "irrelevant_estimated_token_ratio": 0.8922509225092251,
       "irrelevant_estimated_tokens": 1209,
       "latency_samples_ms": [
-        9.069291991181672,
-        8.99345800280571,
-        8.790124993538484,
-        10.83050001761876,
-        8.955708995927125
+        15.978000010363758,
+        16.877374990144745,
+        15.373833011835814,
+        15.883583022514358,
+        17.27687500533648
       ],
       "metrics": {
         "average_precision_at": {
@@ -6084,11 +6084,11 @@
       "irrelevant_estimated_token_ratio": 0.8814467515070328,
       "irrelevant_estimated_tokens": 1316,
       "latency_samples_ms": [
-        8.081916021183133,
-        8.114458003547043,
-        7.045375008601695,
-        7.020084012765437,
-        8.257957990281284
+        17.23604099242948,
+        15.71958398562856,
+        16.113457997562364,
+        15.670541994040832,
+        16.716749989427626
       ],
       "metrics": {
         "average_precision_at": {
@@ -6360,11 +6360,11 @@
       "irrelevant_estimated_token_ratio": 0.886021505376344,
       "irrelevant_estimated_tokens": 1236,
       "latency_samples_ms": [
-        8.161500009009615,
-        10.865374992135912,
-        7.655541994608939,
-        10.038792010163888,
-        8.34391699754633
+        16.630750003969297,
+        17.82120901043527,
+        14.975708996644244,
+        14.999708015238866,
+        14.888125006109476
       ],
       "metrics": {
         "average_precision_at": {
@@ -6648,11 +6648,11 @@
       "irrelevant_estimated_token_ratio": 0.7730796335447498,
       "irrelevant_estimated_tokens": 1097,
       "latency_samples_ms": [
-        8.435750001808628,
-        7.7661249961238354,
-        8.569249999709427,
-        8.431291993474588,
-        7.98520797980018
+        19.900624989531934,
+        22.184667002875358,
+        16.501707985298708,
+        15.095874987309799,
+        14.246457983972505
       ],
       "metrics": {
         "average_precision_at": {
@@ -6924,11 +6924,11 @@
       "irrelevant_estimated_token_ratio": 0.8856015779092702,
       "irrelevant_estimated_tokens": 1347,
       "latency_samples_ms": [
-        7.100084010744467,
-        7.628124993061647,
-        8.490875014103949,
-        8.681667008204386,
-        8.091041003353894
+        17.840207990957424,
+        23.601041990332305,
+        29.893458005972207,
+        18.987290997756645,
+        21.68695899308659
       ],
       "metrics": {
         "average_precision_at": {
@@ -7200,11 +7200,11 @@
       "irrelevant_estimated_token_ratio": 0.8730366492146597,
       "irrelevant_estimated_tokens": 1334,
       "latency_samples_ms": [
-        9.885959007078782,
-        9.433459024876356,
-        9.343125013401732,
-        11.013667011866346,
-        8.770042011747137
+        21.920042025158182,
+        21.87749999575317,
+        22.375250002369285,
+        21.577707986580208,
+        20.96291701309383
       ],
       "metrics": {
         "average_precision_at": {
@@ -7476,11 +7476,11 @@
       "irrelevant_estimated_token_ratio": 0.8992042440318302,
       "irrelevant_estimated_tokens": 1356,
       "latency_samples_ms": [
-        8.184292004443705,
-        9.029417007695884,
-        8.9354999945499,
-        8.189957996364683,
-        8.073917008005083
+        18.34049998433329,
+        20.942041999660432,
+        20.746541995322332,
+        22.65691600041464,
+        21.884874993702397
       ],
       "metrics": {
         "average_precision_at": {
@@ -7764,11 +7764,11 @@
       "irrelevant_estimated_token_ratio": 0.8058783321941216,
       "irrelevant_estimated_tokens": 1179,
       "latency_samples_ms": [
-        12.304000003496185,
-        9.563125000568107,
-        9.47983399964869,
-        9.222708991728723,
-        11.51279199984856
+        23.292249999940395,
+        24.72962500178255,
+        32.337875018129125,
+        18.035791988950223,
+        16.34937501512468
       ],
       "metrics": {
         "average_precision_at": {
@@ -8040,11 +8040,11 @@
       "irrelevant_estimated_token_ratio": 0.8921713441654358,
       "irrelevant_estimated_tokens": 1208,
       "latency_samples_ms": [
-        10.775208007544279,
-        8.452832989860326,
-        9.055208996869624,
-        10.522292024688795,
-        10.04470800398849
+        17.071207985281944,
+        22.885417012730613,
+        20.466625021072105,
+        26.177916006417945,
+        25.359374994877726
       ],
       "metrics": {
         "average_precision_at": {
@@ -8327,11 +8327,11 @@
       "irrelevant_estimated_token_ratio": 0.799863387978142,
       "irrelevant_estimated_tokens": 1171,
       "latency_samples_ms": [
-        9.143665985902771,
-        9.660499985329807,
-        9.842042025411502,
-        8.127167006023228,
-        9.892750007566065
+        26.756750012282282,
+        27.747292013373226,
+        28.238541999598965,
+        28.58383400598541,
+        21.344333013985306
       ],
       "metrics": {
         "average_precision_at": {
@@ -8603,11 +8603,11 @@
       "irrelevant_estimated_token_ratio": 0.893740902474527,
       "irrelevant_estimated_tokens": 1228,
       "latency_samples_ms": [
-        10.430833994178101,
-        9.560457983752713,
-        10.2888340188656,
-        8.224832999985665,
-        10.586374992271885
+        23.698250006418675,
+        23.799957998562604,
+        23.593249992700294,
+        18.96212497376837,
+        24.872834008419886
       ],
       "metrics": {
         "average_precision_at": {
@@ -8879,11 +8879,11 @@
       "irrelevant_estimated_token_ratio": 0.8854087089381207,
       "irrelevant_estimated_tokens": 1159,
       "latency_samples_ms": [
-        10.13983300072141,
-        9.238916012691334,
-        11.216500017326325,
-        8.768375002546236,
-        7.989582984009758
+        23.797875008312985,
+        23.01866697962396,
+        26.184167014434934,
+        25.045250018592924,
+        26.676542009226978
       ],
       "metrics": {
         "average_precision_at": {
@@ -9166,11 +9166,11 @@
       "irrelevant_estimated_token_ratio": 0.773542600896861,
       "irrelevant_estimated_tokens": 1035,
       "latency_samples_ms": [
-        9.795416990527883,
-        9.40937499399297,
-        9.262500010663643,
-        8.632292010588571,
-        8.788000006461516
+        29.7104999772273,
+        28.001500002574176,
+        26.048125000670552,
+        25.550958001986146,
+        22.477250022348017
       ],
       "metrics": {
         "average_precision_at": {
@@ -9453,11 +9453,11 @@
       "irrelevant_estimated_token_ratio": 0.7492603550295858,
       "irrelevant_estimated_tokens": 1013,
       "latency_samples_ms": [
-        9.108333004405722,
-        8.059916988713667,
-        9.782165987417102,
-        8.603791997302324,
-        9.127790981438011
+        30.809625022811815,
+        27.827417012304068,
+        22.954250016482547,
+        27.648124989354983,
+        25.317791994893923
       ],
       "metrics": {
         "average_precision_at": {
@@ -9739,11 +9739,11 @@
       "irrelevant_estimated_token_ratio": 0.75390625,
       "irrelevant_estimated_tokens": 965,
       "latency_samples_ms": [
-        9.363125020172447,
-        8.93012501182966,
-        7.84258299972862,
-        7.718499982729554,
-        10.258666996378452
+        23.65733400802128,
+        20.58158299769275,
+        21.521333983400837,
+        30.699582974193618,
+        30.108582985121757
       ],
       "metrics": {
         "average_precision_at": {
@@ -10025,11 +10025,11 @@
       "irrelevant_estimated_token_ratio": 0.7848484848484848,
       "irrelevant_estimated_tokens": 1036,
       "latency_samples_ms": [
-        11.40420901356265,
-        9.493707999354228,
-        7.4972090078517795,
-        7.603708014357835,
-        8.371499978238717
+        26.317624986404553,
+        21.6421669756528,
+        23.157999996328726,
+        23.495417000958696,
+        21.084667008835822
       ],
       "metrics": {
         "average_precision_at": {
@@ -10324,11 +10324,11 @@
       "irrelevant_estimated_token_ratio": 0.786589762076424,
       "irrelevant_estimated_tokens": 1091,
       "latency_samples_ms": [
-        10.029625002061948,
-        10.257374990032986,
-        9.608249994926155,
-        9.322583995526657,
-        8.976624987553805
+        20.40579100139439,
+        30.941125005483627,
+        35.99529201164842,
+        24.654084001667798,
+        26.85645900783129
       ],
       "metrics": {
         "average_precision_at": {
@@ -10625,11 +10625,11 @@
       "irrelevant_estimated_token_ratio": 0.6599131693198264,
       "irrelevant_estimated_tokens": 912,
       "latency_samples_ms": [
-        10.580000001937151,
-        10.644999973010272,
-        8.953749987995252,
-        10.909459000686184,
-        8.623208006611094
+        27.33250000164844,
+        25.756499991985038,
+        23.536749999038875,
+        23.162625002441928,
+        23.465874983230606
       ],
       "metrics": {
         "average_precision_at": {
@@ -10912,11 +10912,11 @@
       "irrelevant_estimated_token_ratio": 0.783661119515885,
       "irrelevant_estimated_tokens": 1036,
       "latency_samples_ms": [
-        8.685124979820102,
-        9.575750009389594,
-        9.323709004092962,
-        8.739167009480298,
-        10.964415996568277
+        23.42008301638998,
+        23.310958000365645,
+        25.06166699458845,
+        38.3739160024561,
+        21.171000000322238
       ],
       "metrics": {
         "average_precision_at": {
@@ -11199,11 +11199,11 @@
       "irrelevant_estimated_token_ratio": 0.8835616438356164,
       "irrelevant_estimated_tokens": 1161,
       "latency_samples_ms": [
-        9.057999996002764,
-        9.829791000811383,
-        7.93100000009872,
-        10.537750000366941,
-        8.38912499602884
+        18.24541701353155,
+        16.23775000916794,
+        38.7811669788789,
+        25.32350001274608,
+        15.236791979987174
       ],
       "metrics": {
         "average_precision_at": {
@@ -11476,11 +11476,11 @@
       "irrelevant_estimated_token_ratio": 0.8881019830028328,
       "irrelevant_estimated_tokens": 1254,
       "latency_samples_ms": [
-        8.849959005601704,
-        7.815416989615187,
-        8.578125009080395,
-        10.222875018371269,
-        8.88054200913757
+        19.113166024908423,
+        25.94704201328568,
+        27.325083006871864,
+        23.120958998333663,
+        20.95091697992757
       ],
       "metrics": {
         "average_precision_at": {
@@ -11788,11 +11788,11 @@
       "irrelevant_estimated_token_ratio": 0.6740638002773925,
       "irrelevant_estimated_tokens": 972,
       "latency_samples_ms": [
-        8.16875000600703,
-        7.385708013316616,
-        7.4562919908203185,
-        7.4744580197148025,
-        8.577375003369525
+        16.251749999355525,
+        13.666374987224117,
+        15.64891598536633,
+        14.797459007240832,
+        14.54420801019296
       ],
       "metrics": {
         "average_precision_at": {
@@ -12090,11 +12090,11 @@
       "irrelevant_estimated_token_ratio": 0.7715487035739313,
       "irrelevant_estimated_tokens": 1101,
       "latency_samples_ms": [
-        10.721583006670699,
-        9.812541014980525,
-        7.421707996400073,
-        9.694125008536503,
-        7.9355830093845725
+        15.32445801422,
+        13.722000003326684,
+        12.872874998720363,
+        11.856791999889538,
+        13.425290992017835
       ],
       "metrics": {
         "average_precision_at": {
@@ -12392,11 +12392,11 @@
       "irrelevant_estimated_token_ratio": 0.7705753823743627,
       "irrelevant_estimated_tokens": 1058,
       "latency_samples_ms": [
-        7.655374996829778,
-        7.4107499967794865,
-        7.411832979414612,
-        7.318999996641651,
-        7.358667004154995
+        16.81216698489152,
+        12.114916986320168,
+        15.230290999170393,
+        15.964749996783212,
+        12.584042007802054
       ],
       "metrics": {
         "average_precision_at": {
@@ -12693,11 +12693,11 @@
       "irrelevant_estimated_token_ratio": 0.6108202443280978,
       "irrelevant_estimated_tokens": 700,
       "latency_samples_ms": [
-        7.37941701663658,
-        7.5363750220276415,
-        7.435250008711591,
-        7.325041980948299,
-        8.74154202756472
+        12.81295798253268,
+        13.521959015633911,
+        13.724874996114522,
+        14.092541998252273,
+        11.975999979767948
       ],
       "metrics": {
         "average_precision_at": {
@@ -12990,11 +12990,11 @@
       "irrelevant_estimated_token_ratio": 0.7522267206477733,
       "irrelevant_estimated_tokens": 929,
       "latency_samples_ms": [
-        7.506624999223277,
-        7.509832998039201,
-        8.524874981958419,
-        7.453625003108755,
-        8.568209013901651
+        15.283583983546123,
+        15.06195799447596,
+        15.358041011495516,
+        16.344291012501344,
+        14.552375010680407
       ],
       "metrics": {
         "average_precision_at": {
@@ -13290,11 +13290,11 @@
       "irrelevant_estimated_token_ratio": 0.8842188739095955,
       "irrelevant_estimated_tokens": 1115,
       "latency_samples_ms": [
-        7.583833998069167,
-        7.423916016705334,
-        7.313875015825033,
-        9.318415977759287,
-        7.643249991815537
+        27.53000002121553,
+        25.033166020875797,
+        16.21829200303182,
+        13.927583990152925,
+        13.684791018022224
       ],
       "metrics": {
         "average_precision_at": {
@@ -13591,11 +13591,11 @@
       "irrelevant_estimated_token_ratio": 0.8920863309352518,
       "irrelevant_estimated_tokens": 1240,
       "latency_samples_ms": [
-        7.6325830013956875,
-        7.369416998699307,
-        7.4204999837093055,
-        8.76579200848937,
-        7.9417079978156835
+        14.965207985369489,
+        15.635124989785254,
+        12.506833008956164,
+        14.171792019624263,
+        14.443541993387043
       ],
       "metrics": {
         "average_precision_at": {
@@ -13906,11 +13906,11 @@
       "irrelevant_estimated_token_ratio": 0.6731980405878236,
       "irrelevant_estimated_tokens": 962,
       "latency_samples_ms": [
-        7.412125007249415,
-        7.391667022602633,
-        7.411291997414082,
-        7.628749997820705,
-        7.442875008564442
+        15.406459016958252,
+        12.993999989703298,
+        13.648916996316984,
+        14.74054201389663,
+        13.887459004763514
       ],
       "metrics": {
         "average_precision_at": {
@@ -14208,11 +14208,11 @@
       "irrelevant_estimated_token_ratio": 0.6748344370860927,
       "irrelevant_estimated_tokens": 1019,
       "latency_samples_ms": [
-        9.520666993921623,
-        8.751999994274229,
-        9.33329199324362,
-        10.135999997146428,
-        9.651291009504348
+        17.200458998559043,
+        15.921207988867536,
+        17.734166991431266,
+        20.872959023108706,
+        18.889625003794208
       ],
       "metrics": {
         "average_precision_at": {
@@ -14508,11 +14508,11 @@
       "irrelevant_estimated_token_ratio": 0.6440410418310971,
       "irrelevant_estimated_tokens": 816,
       "latency_samples_ms": [
-        9.399915987160057,
-        9.421124996151775,
-        8.721375023014843,
-        9.10225001280196,
-        8.311333018355072
+        19.499958987580612,
+        17.219832981936634,
+        16.632249986287206,
+        17.046332999598235,
+        16.040624992456287
       ],
       "metrics": {
         "average_precision_at": {
@@ -14818,11 +14818,11 @@
       "irrelevant_estimated_token_ratio": 0.5472334682860999,
       "irrelevant_estimated_tokens": 811,
       "latency_samples_ms": [
-        8.876875013811514,
-        9.113792009884492,
-        9.010750014567748,
-        8.210083993617445,
-        9.58154199179262
+        16.564124991418794,
+        18.06320800096728,
+        15.756124979816377,
+        20.047000027261674,
+        18.024208024144173
       ],
       "metrics": {
         "average_precision_at": {
@@ -15130,11 +15130,11 @@
       "irrelevant_estimated_token_ratio": 0.5439938791124713,
       "irrelevant_estimated_tokens": 711,
       "latency_samples_ms": [
-        9.340040996903554,
-        8.625541988294572,
-        8.28112501767464,
-        8.713208022527397,
-        10.598374996334314
+        17.31537500745617,
+        19.76437499979511,
+        18.554708018200472,
+        16.79158300976269,
+        16.898166009923443
       ],
       "metrics": {
         "average_precision_at": {
@@ -15441,11 +15441,11 @@
       "irrelevant_estimated_token_ratio": 0.532418001525553,
       "irrelevant_estimated_tokens": 698,
       "latency_samples_ms": [
-        9.251915995264426,
-        9.090834006201476,
-        10.045417002402246,
-        9.08133399207145,
-        9.490833996096626
+        21.66266701533459,
+        17.515249986900017,
+        19.25895898602903,
+        26.80412499466911,
+        23.058666003635153
       ],
       "metrics": {
         "average_precision_at": {
@@ -15740,11 +15740,11 @@
       "irrelevant_estimated_token_ratio": 0.6481203007518797,
       "irrelevant_estimated_tokens": 862,
       "latency_samples_ms": [
-        10.03350000246428,
-        9.326208004495129,
-        9.581833000993356,
-        9.00354198529385,
-        9.869375004200265
+        20.87012497941032,
+        22.981375019298866,
+        22.393916005967185,
+        24.493415985489264,
+        22.25620800163597
       ],
       "metrics": {
         "average_precision_at": {
@@ -16051,11 +16051,11 @@
       "irrelevant_estimated_token_ratio": 0.6701977401129944,
       "irrelevant_estimated_tokens": 949,
       "latency_samples_ms": [
-        9.44616601918824,
-        9.040625009220093,
-        9.574291994795203,
-        8.226500009186566,
-        10.268540994729847
+        22.830833011539653,
+        25.97087499452755,
+        23.30570900812745,
+        19.215415988583118,
+        23.573791986564174
       ],
       "metrics": {
         "average_precision_at": {
@@ -16365,11 +16365,11 @@
       "irrelevant_estimated_token_ratio": 0.5480059084194978,
       "irrelevant_estimated_tokens": 742,
       "latency_samples_ms": [
-        9.839290985837579,
-        9.553374984534457,
-        8.978708006907254,
-        10.285249998560175,
-        9.630999993532896
+        16.87837502686307,
+        17.57500000530854,
+        17.023083986714482,
+        17.257749976124614,
+        38.071125018177554
       ],
       "metrics": {
         "average_precision_at": {
@@ -16627,11 +16627,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1269,
       "latency_samples_ms": [
-        11.223250010516495,
-        8.795083005679771,
-        7.966375007526949,
-        9.048499981872737,
-        7.76424998184666
+        38.2590840163175,
+        38.23516599368304,
+        20.344916003523394,
+        14.576999994460493,
+        15.49770901328884
       ],
       "metrics": {
         "average_precision_at": {
@@ -16889,11 +16889,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1342,
       "latency_samples_ms": [
-        8.541916991816834,
-        7.603207981446758,
-        8.603499998571351,
-        7.737999985693023,
-        9.892250003758818
+        14.726207999046892,
+        15.379207994556054,
+        14.570125000318512,
+        14.790499990340322,
+        12.410916009685025
       ],
       "metrics": {
         "average_precision_at": {
@@ -17151,11 +17151,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1390,
       "latency_samples_ms": [
-        7.874417002312839,
-        7.45100001222454,
-        7.4545000097714365,
-        8.127000008244067,
-        7.349166990024969
+        14.711833006003872,
+        13.941665994934738,
+        13.926791987614706,
+        14.187458000378683,
+        14.884541014907882
       ],
       "metrics": {
         "average_precision_at": {
@@ -17413,11 +17413,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1489,
       "latency_samples_ms": [
-        9.065666992682964,
-        8.264582982519642,
-        7.369875005679205,
-        8.276708016637713,
-        8.437458978733048
+        12.60266697499901,
+        14.026999997440726,
+        14.573416003258899,
+        17.13058300083503,
+        17.355207994114608
       ],
       "metrics": {
         "average_precision_at": {
@@ -17676,11 +17676,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1435,
       "latency_samples_ms": [
-        8.237041998654604,
-        8.945292007410899,
-        8.428958972217515,
-        8.079416991677135,
-        8.454416994936764
+        16.528000007383525,
+        15.032167022582144,
+        14.407332986593246,
+        12.824415985960513,
+        14.447708992520347
       ],
       "metrics": {
         "average_precision_at": {
@@ -17939,11 +17939,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1406,
       "latency_samples_ms": [
-        8.989041001768783,
-        7.7299579861573875,
-        8.462375000817701,
-        7.23454199032858,
-        8.672208990901709
+        16.48837499669753,
+        16.63487500627525,
+        15.092124987859279,
+        13.857624988304451,
+        13.410709012532607
       ],
       "metrics": {
         "average_precision_at": {
@@ -18202,11 +18202,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1291,
       "latency_samples_ms": [
-        10.68845801637508,
-        9.191874996758997,
-        8.187125000404194,
-        9.217084007104859,
-        8.342291024746373
+        16.163417021743953,
+        17.31170801213011,
+        15.510833007283509,
+        13.769750017672777,
+        17.836333019658923
       ],
       "metrics": {
         "average_precision_at": {
@@ -18464,11 +18464,11 @@
       "irrelevant_estimated_token_ratio": 1.0,
       "irrelevant_estimated_tokens": 1025,
       "latency_samples_ms": [
-        7.076291978592053,
-        8.335749997058883,
-        7.182207977166399,
-        7.651583990082145,
-        9.935167006915435
+        15.730540995718911,
+        15.160500013735145,
+        16.164832981303334,
+        14.457832992775366,
+        14.635416999226436
       ],
       "metrics": {
         "average_precision_at": {
@@ -18708,16 +18708,16 @@
     "configured_max_sequence_length": 256,
     "device": "cpu",
     "dimension": 384,
-    "document_encoding_time_ms": 1227.044291998027,
+    "document_encoding_time_ms": 1812.6258330303244,
     "document_format_version": "crawlforge-semantic-document-v1",
     "document_input_count": 50,
     "embedded_chunks": 50,
     "embedding_batch_size": 32,
     "embedding_cache_hits": 0,
-    "embedding_indexing_time_ms": 5038.115208008094,
-    "embeddings_per_second": 40.748325326206235,
+    "embedding_indexing_time_ms": 104603.06608301471,
+    "embeddings_per_second": 27.584291853774722,
     "exact_scan_complexity": "O(number_of_chunks * embedding_dimension)",
-    "exact_vector_scan_mean_ms": 1.2556384024736487,
+    "exact_vector_scan_mean_ms": 1.7174585909264064,
     "failed_embedding_chunks": 0,
     "index": "sqlite_float32_blob",
     "invalidated_embeddings": 0,
@@ -18730,38 +18730,38 @@
     "loaded_vector_bytes": 76800,
     "loaded_vector_memory_estimate_bytes": 76800,
     "maximum_tokenized_length": 199,
-    "model_cache_size_bytes": 183156830,
+    "model_cache_size_bytes": null,
     "model_fingerprint": "99c02b0220fea31cf39e42bcaa37882537882fe061c56eb509db6b0cc61090cf",
     "model_id": "sentence-transformers/all-MiniLM-L6-v2",
-    "model_load_time_ms": 3796.0410000232514,
+    "model_load_time_ms": 102771.28104199073,
     "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
     "normalized": true,
     "precision": "float32",
-    "provenance_materialization_mean_ms": 0.40840178539964944,
+    "provenance_materialization_mean_ms": 0.5498911271588272,
     "provider": "sentence-transformers",
-    "query_encoding_mean_ms": 5.2323868330070695,
+    "query_encoding_mean_ms": 13.495679183909237,
     "query_format_version": "crawlforge-semantic-query-v1",
     "ranking": "exact_cosine_similarity",
-    "readiness_check_mean_ms": 0.12829729300727577,
+    "readiness_check_mean_ms": 0.2724302290353474,
     "repeat_latency": 5,
     "score_order": "descending",
     "score_type": "cosine_similarity",
     "sentence_transformers_version": "5.6.1",
-    "sqlite_snapshot_fetch_mean_ms": 0.41984599658530264,
+    "sqlite_snapshot_fetch_mean_ms": 0.6959480487585828,
     "sqlite_snapshot_scope": "compatible vectors and complete chunk provenance",
-    "sqlite_vector_write_time_ms": 5.703248985810205,
+    "sqlite_vector_write_time_ms": 8.879417029675096,
     "stored_vector_bytes": 76800,
     "token_budget": 3000,
     "torch_version": "2.2.2",
-    "total_semantic_retrieval_mean_ms": 8.587294257005919,
+    "total_semantic_retrieval_mean_ms": 18.097685745051535,
     "transformers_version": "4.57.6",
     "truncated_document_fraction": 0.0,
     "truncated_document_inputs": 0,
-    "vector_decode_mean_ms": 1.0742162535040591,
+    "vector_decode_mean_ms": 1.237755690718606,
     "warmup_calls": 3
   },
   "retrieval_strategy": "semantic-exact-cosine",
-  "timestamp": "2026-07-29T15:30:19.495036+00:00",
+  "timestamp": "2026-08-02T08:26:11.198767+00:00",
   "warnings": [
     "Latency values are warm-index measurements for this machine only.",
     "Semantic cosine similarity is not calibrated confidence.",

@@ -349,18 +349,19 @@ No API key is required.
 ## Limits and decision boundary
 
 - Cosine similarity is a relative ranking score, not calibrated confidence.
-- No score threshold, abstention policy, hybrid fusion, or reranker is fitted.
+- No score threshold, abstention policy, or reranker is fitted. Hybrid search
+  uses fixed rank fusion rather than calibrated semantic scores.
 - The default model is lightweight and English-focused.
 - Model download is required unless the exact revision is already cached.
 - Exact scan materializes compatible vectors and is unsuitable for unbounded
   collections.
 - Token budgets still use CrawlForge's deterministic approximation, not the
   embedding tokenizer.
-- The MCP server remains lexical BM25. Semantic MCP tools can be considered
-  only after a hybrid retrieval design has a clear contract.
+- The MCP server remains lexical BM25. Semantic and hybrid strategy selection
+  require a separate MCP model-lifecycle and deployment design.
 
-The measured gains on paraphrase and conceptual queries show that a hybrid
-experiment is justified. The aggregate MRR, exact-term, code-symbol, and
-negative-query regressions show that semantic retrieval should not replace
-BM25. A future hybrid stage should preserve lexical strengths and be evaluated
-against this frozen paired baseline without changing its judgments.
+The measured gains on paraphrase and conceptual queries justify keeping
+semantic candidates alongside BM25 rather than replacing lexical retrieval.
+The fixed RRF implementation and its checked results are documented in
+[Hybrid retrieval](hybrid-retrieval.md); the dataset and judgments remain
+unchanged from this semantic baseline.

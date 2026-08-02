@@ -16,6 +16,12 @@ from crawlforge.advanced import AdvancedCrawler
 from crawlforge.config import CrawlerConfig, LoggingConfig, ReportConfig
 from crawlforge.context_engine import ContextEngine
 from crawlforge.context_models import ContextResult, IndexingResult, SearchHit
+from crawlforge.hybrid import HybridRetriever
+from crawlforge.hybrid_models import (
+    HybridContextResult,
+    HybridSearchConfig,
+    HybridSearchHit,
+)
 from crawlforge.logging_config import configure_logging
 from crawlforge.semantic_models import (
     DEFAULT_SEMANTIC_DIMENSION,
@@ -24,6 +30,7 @@ from crawlforge.semantic_models import (
     DeviceName,
     EmbeddingProvider,
     SemanticContextResult,
+    SemanticIndexInfo,
     SemanticIndexingResult,
     SemanticSearchHit,
 )
@@ -35,6 +42,7 @@ if TYPE_CHECKING:
         EvaluationDataset,
         EvaluationRun,
     )
+    from crawlforge.evaluation.multi_comparison import MultiEvaluationComparison
 
 _EVALUATION_CATEGORIES = (
     "exact_term",
@@ -199,11 +207,12 @@ def build_parser() -> argparse.ArgumentParser:
     search_parser.add_argument("--token-budget", type=int, default=3000)
     search_parser.add_argument(
         "--strategy",
-        choices=("bm25", "semantic"),
+        choices=("bm25", "semantic", "hybrid"),
         default="bm25",
         help="retrieval strategy (default: bm25)",
     )
     _add_semantic_model_arguments(search_parser)
+    _add_hybrid_arguments(search_parser)
     search_parser.add_argument(
         "--json",
         action="store_true",
@@ -231,11 +240,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     evaluate_run_parser.add_argument(
         "--strategy",
-        choices=("bm25", "semantic"),
+        choices=("bm25", "semantic", "hybrid"),
         default="bm25",
         help="retrieval strategy (default: bm25)",
     )
     _add_semantic_model_arguments(evaluate_run_parser)
+    _add_hybrid_arguments(evaluate_run_parser)
     evaluate_run_parser.add_argument(
         "--database",
         type=Path,
@@ -289,7 +299,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     evaluate_compare_parser = evaluate_commands.add_parser(
         "compare",
-        help="run paired BM25 and semantic retrieval evaluation",
+        help="compare two or more retrieval strategies",
     )
     evaluate_compare_parser.add_argument(
         "--dataset",
@@ -318,7 +328,7 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate_compare_parser.add_argument(
         "--strategies",
         default="bm25,semantic",
-        help="paired strategies; must be bm25,semantic",
+        help="comma-separated bm25, semantic, and hybrid strategies",
     )
     evaluate_compare_parser.add_argument(
         "--limit-values",
@@ -360,6 +370,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="compare one query ID; may be repeated",
     )
     _add_semantic_model_arguments(evaluate_compare_parser)
+    _add_hybrid_arguments(evaluate_compare_parser)
     evaluate_compare_parser.add_argument(
         "--json",
         action="store_true",
@@ -426,6 +437,46 @@ def _add_semantic_model_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_hybrid_arguments(parser: argparse.ArgumentParser) -> None:
+    defaults = HybridSearchConfig()
+    parser.add_argument(
+        "--rrf-k",
+        type=int,
+        default=defaults.rrf_k,
+        help=f"RRF rank constant (default: {defaults.rrf_k})",
+    )
+    parser.add_argument(
+        "--bm25-weight",
+        type=float,
+        default=defaults.bm25_weight,
+        help=f"BM25 RRF weight (default: {defaults.bm25_weight:g})",
+    )
+    parser.add_argument(
+        "--semantic-weight",
+        type=float,
+        default=defaults.semantic_weight,
+        help=f"semantic RRF weight (default: {defaults.semantic_weight:g})",
+    )
+    parser.add_argument(
+        "--bm25-candidates",
+        type=int,
+        default=defaults.bm25_candidate_limit,
+        help=(
+            "BM25 candidate depth before fusion "
+            f"(default: {defaults.bm25_candidate_limit})"
+        ),
+    )
+    parser.add_argument(
+        "--semantic-candidates",
+        type=int,
+        default=defaults.semantic_candidate_limit,
+        help=(
+            "semantic candidate depth before fusion "
+            f"(default: {defaults.semantic_candidate_limit})"
+        ),
+    )
+
+
 async def run(arguments: argparse.Namespace) -> dict[str, object]:
     """Run one configured crawl and return its final statistics."""
     config = _config_from_arguments(arguments)
@@ -461,7 +512,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             context = asyncio.run(_run_search(arguments))
         except (OSError, RuntimeError, sqlite3.Error, TypeError, ValueError) as error:
             parser.error(str(error))
-        if isinstance(context, SemanticContextResult):
+        if isinstance(context, HybridContextResult):
+            _print_hybrid_context_result(context, json_output=arguments.json)
+        elif isinstance(context, SemanticContextResult):
             _print_semantic_context_result(context, json_output=arguments.json)
         else:
             _print_context_result(context, json_output=arguments.json)
@@ -535,7 +588,7 @@ async def _run_embed(arguments: argparse.Namespace) -> SemanticIndexingResult:
 
 async def _run_search(
     arguments: argparse.Namespace,
-) -> ContextResult | SemanticContextResult:
+) -> ContextResult | SemanticContextResult | HybridContextResult:
     database: Path = arguments.database
     if not database.is_file():
         raise ValueError(f"context index does not exist: {database}")
@@ -548,6 +601,17 @@ async def _run_search(
             )
         provider = _semantic_provider(arguments)
         try:
+            if arguments.strategy == "hybrid":
+                retriever = HybridRetriever(
+                    context_engine=engine,
+                    embedding_provider=provider,
+                    config=_hybrid_config(arguments),
+                )
+                return await retriever.build_context(
+                    arguments.query,
+                    limit=arguments.limit,
+                    token_budget=arguments.token_budget,
+                )
             return await engine.build_semantic_context(
                 arguments.query,
                 provider=provider,
@@ -556,6 +620,16 @@ async def _run_search(
             )
         finally:
             await provider.close()
+
+
+def _hybrid_config(arguments: argparse.Namespace) -> HybridSearchConfig:
+    return HybridSearchConfig(
+        rrf_k=arguments.rrf_k,
+        bm25_weight=arguments.bm25_weight,
+        semantic_weight=arguments.semantic_weight,
+        bm25_candidate_limit=arguments.bm25_candidates,
+        semantic_candidate_limit=arguments.semantic_candidates,
+    )
 
 
 def _semantic_provider(
@@ -638,6 +712,7 @@ def _execute_evaluation(arguments: argparse.Namespace) -> int:
             batch_size=arguments.batch_size,
             cache_directory=arguments.cache_directory,
             local_files_only=arguments.local_files_only,
+            hybrid_config=_hybrid_config(arguments),
         )
     )
     write_evaluation_report(
@@ -654,13 +729,9 @@ def _execute_evaluation(arguments: argparse.Namespace) -> int:
 
 
 def _execute_evaluation_comparison(arguments: argparse.Namespace) -> int:
-    from crawlforge.evaluation.comparison import write_comparison_report
     from crawlforge.evaluation.dataset import filter_dataset, load_dataset
 
-    if tuple(
-        item.strip() for item in arguments.strategies.split(",") if item.strip()
-    ) != ("bm25", "semantic"):
-        raise ValueError("strategies must be exactly bm25,semantic")
+    strategies = _parse_evaluation_strategies(arguments.strategies)
     complete_dataset = load_dataset(_evaluation_dataset_path(arguments.dataset))
     dataset = filter_dataset(
         complete_dataset,
@@ -681,10 +752,50 @@ def _execute_evaluation_comparison(arguments: argparse.Namespace) -> int:
         database=database,
         output=output,
     )
-    comparison = asyncio.run(
-        _run_paired_retrieval_evaluation(
+    if strategies == ("bm25", "semantic"):
+        from crawlforge.evaluation.comparison import write_comparison_report
+
+        comparison = asyncio.run(
+            _run_paired_retrieval_evaluation(
+                dataset=dataset,
+                database=database,
+                limits=limits,
+                token_budget=arguments.token_budget,
+                repeat_latency=arguments.repeat_latency,
+                bootstrap_samples=arguments.bootstrap_samples,
+                bootstrap_seed=arguments.bootstrap_seed,
+                model_id=arguments.model,
+                model_revision=arguments.revision,
+                dimension=arguments.dimension,
+                device=arguments.device,
+                batch_size=arguments.batch_size,
+                cache_directory=arguments.cache_directory,
+                local_files_only=arguments.local_files_only,
+            )
+        )
+        write_comparison_report(
+            comparison,
+            output,
+            report_format=arguments.format,
+        )
+        _print_comparison_summary(
+            comparison,
+            output=output,
+            json_output=arguments.json,
+        )
+        has_failures = any(
+            query.bm25_failure is not None or query.semantic_failure is not None
+            for query in comparison.query_comparisons
+        )
+        return 1 if has_failures else 0
+
+    from crawlforge.evaluation.multi_comparison import write_multi_comparison_report
+
+    multi_comparison = asyncio.run(
+        _run_multi_retrieval_evaluation(
             dataset=dataset,
             database=database,
+            strategies=strategies,
             limits=limits,
             token_budget=arguments.token_budget,
             repeat_latency=arguments.repeat_latency,
@@ -697,21 +808,23 @@ def _execute_evaluation_comparison(arguments: argparse.Namespace) -> int:
             batch_size=arguments.batch_size,
             cache_directory=arguments.cache_directory,
             local_files_only=arguments.local_files_only,
+            hybrid_config=_hybrid_config(arguments),
         )
     )
-    write_comparison_report(
-        comparison,
+    write_multi_comparison_report(
+        multi_comparison,
         output,
         report_format=arguments.format,
     )
-    _print_comparison_summary(
-        comparison,
+    _print_multi_comparison_summary(
+        multi_comparison,
         output=output,
         json_output=arguments.json,
     )
     has_failures = any(
-        query.bm25_failure is not None or query.semantic_failure is not None
-        for query in comparison.query_comparisons
+        evidence.failure is not None
+        for query in multi_comparison.query_comparisons
+        for evidence in query.strategies
     )
     return 1 if has_failures else 0
 
@@ -727,13 +840,17 @@ def _evaluation_output_path(
         return configured_output
 
     is_canonical_semantic = (
-        arguments.strategy == "semantic"
+        arguments.strategy in ("semantic", "hybrid")
         and arguments.model == DEFAULT_SEMANTIC_MODEL_ID
         and arguments.revision == DEFAULT_SEMANTIC_MODEL_REVISION
         and arguments.dimension == DEFAULT_SEMANTIC_DIMENSION
         and arguments.device == "cpu"
         and arguments.batch_size == 32
         and not arguments.local_files_only
+    )
+    is_canonical_hybrid = (
+        arguments.strategy != "hybrid"
+        or _hybrid_config(arguments) == HybridSearchConfig()
     )
     is_canonical_baseline = (
         arguments.dataset is None
@@ -745,14 +862,17 @@ def _evaluation_output_path(
         and arguments.token_budget == 3000
         and arguments.repeat_latency == 5
         and (arguments.strategy == "bm25" or is_canonical_semantic)
+        and is_canonical_hybrid
     )
     if not is_canonical_baseline:
         raise ValueError(
             "custom or filtered evaluations require an explicit --output path"
         )
-    report_name = (
-        "bm25-baseline" if arguments.strategy == "bm25" else "semantic-baseline"
-    )
+    report_name = {
+        "bm25": "bm25-baseline",
+        "semantic": "semantic-baseline",
+        "hybrid": "hybrid-baseline",
+    }[arguments.strategy]
     return Path(
         f"reports/{report_name}." + ("json" if arguments.format == "json" else "md")
     )
@@ -775,6 +895,7 @@ def _comparison_output_path(
         and arguments.batch_size == 32
         and not arguments.local_files_only
     )
+    strategies = _parse_evaluation_strategies(arguments.strategies)
     is_canonical = (
         arguments.dataset is None
         and arguments.category is None
@@ -787,13 +908,23 @@ def _comparison_output_path(
         and arguments.bootstrap_samples == 5000
         and arguments.bootstrap_seed == 20260729
         and is_canonical_semantic
+        and strategies in (("bm25", "semantic"), ("bm25", "semantic", "hybrid"))
+        and (
+            "hybrid" not in strategies
+            or _hybrid_config(arguments) == HybridSearchConfig()
+        )
     )
     if not is_canonical:
         raise ValueError(
             "custom or filtered comparisons require an explicit --output path"
         )
+    report_name = (
+        "bm25-vs-semantic"
+        if strategies == ("bm25", "semantic")
+        else "bm25-vs-semantic-vs-hybrid"
+    )
     return Path(
-        "reports/bm25-vs-semantic." + ("json" if arguments.format == "json" else "md")
+        f"reports/{report_name}." + ("json" if arguments.format == "json" else "md")
     )
 
 
@@ -831,6 +962,7 @@ async def _run_retrieval_evaluation(
     batch_size: int,
     cache_directory: Path | None,
     local_files_only: bool,
+    hybrid_config: HybridSearchConfig,
 ) -> EvaluationRun:
     from crawlforge.chunking import ChunkingConfig, TextChunker
     from crawlforge.evaluation.runner import ingest_evaluation_corpus
@@ -851,8 +983,26 @@ async def _run_retrieval_evaluation(
                 token_budget=token_budget,
                 repeat_latency=repeat_latency,
             )
-        if strategy_name != "semantic":
+        if strategy_name not in ("semantic", "hybrid"):
             raise ValueError(f"unsupported retrieval strategy: {strategy_name}")
+        if strategy_name == "hybrid":
+            return await _evaluate_hybrid(
+                engine=engine,
+                dataset=dataset,
+                corpus_statistics=corpus_statistics,
+                chunking_configuration=asdict(chunking),
+                limits=limits,
+                token_budget=token_budget,
+                repeat_latency=repeat_latency,
+                model_id=model_id,
+                model_revision=model_revision,
+                dimension=dimension,
+                device=device,
+                batch_size=batch_size,
+                cache_directory=cache_directory,
+                local_files_only=local_files_only,
+                hybrid_config=hybrid_config,
+            )
         return await _evaluate_semantic(
             engine=engine,
             dataset=dataset,
@@ -933,6 +1083,102 @@ async def _run_paired_retrieval_evaluation(
     )
 
 
+async def _run_multi_retrieval_evaluation(
+    *,
+    dataset: EvaluationDataset,
+    database: Path,
+    strategies: tuple[str, ...],
+    limits: tuple[int, ...],
+    token_budget: int,
+    repeat_latency: int,
+    bootstrap_samples: int,
+    bootstrap_seed: int,
+    model_id: str,
+    model_revision: str | None,
+    dimension: int,
+    device: str,
+    batch_size: int,
+    cache_directory: Path | None,
+    local_files_only: bool,
+    hybrid_config: HybridSearchConfig,
+) -> MultiEvaluationComparison:
+    from crawlforge.chunking import ChunkingConfig, TextChunker
+    from crawlforge.evaluation.multi_comparison import (
+        compare_multiple_evaluation_runs,
+    )
+    from crawlforge.evaluation.runner import ingest_evaluation_corpus
+
+    chunking = ChunkingConfig()
+    chunking_configuration = asdict(chunking)
+    async with ContextEngine(
+        database,
+        chunker=TextChunker(config=chunking),
+    ) as engine:
+        corpus_statistics = await ingest_evaluation_corpus(engine, dataset)
+        provider = _semantic_provider_from_values(
+            model_id=model_id,
+            model_revision=model_revision,
+            dimension=dimension,
+            device=device,
+            batch_size=batch_size,
+            cache_directory=cache_directory,
+            local_files_only=local_files_only,
+        )
+        try:
+            indexing = await engine.index_embeddings(provider, batch_size=batch_size)
+            index_info = await engine.get_semantic_index_info(provider)
+            runs: list[tuple[str, EvaluationRun]] = []
+            for strategy_name in strategies:
+                if strategy_name == "bm25":
+                    evaluation = await _evaluate_bm25(
+                        engine=engine,
+                        dataset=dataset,
+                        corpus_statistics=corpus_statistics,
+                        chunking_configuration=chunking_configuration,
+                        limits=limits,
+                        token_budget=token_budget,
+                        repeat_latency=repeat_latency,
+                    )
+                elif strategy_name == "semantic":
+                    evaluation = await _evaluate_semantic_prepared(
+                        engine=engine,
+                        provider=provider,
+                        dataset=dataset,
+                        corpus_statistics=corpus_statistics,
+                        chunking_configuration=chunking_configuration,
+                        limits=limits,
+                        token_budget=token_budget,
+                        repeat_latency=repeat_latency,
+                        batch_size=batch_size,
+                        indexing=indexing,
+                        index_info=index_info,
+                    )
+                else:
+                    evaluation = await _evaluate_hybrid_prepared(
+                        engine=engine,
+                        provider=provider,
+                        dataset=dataset,
+                        corpus_statistics=corpus_statistics,
+                        chunking_configuration=chunking_configuration,
+                        limits=limits,
+                        token_budget=token_budget,
+                        repeat_latency=repeat_latency,
+                        batch_size=batch_size,
+                        indexing=indexing,
+                        index_info=index_info,
+                        hybrid_config=hybrid_config,
+                    )
+                runs.append((strategy_name, evaluation))
+        finally:
+            await provider.close()
+    return compare_multiple_evaluation_runs(
+        runs,
+        focus_limit=5,
+        bootstrap_samples=bootstrap_samples,
+        seed=bootstrap_seed,
+    )
+
+
 async def _evaluate_bm25(
     *,
     engine: ContextEngine,
@@ -983,11 +1229,6 @@ async def _evaluate_semantic(
     cache_directory: Path | None,
     local_files_only: bool,
 ) -> EvaluationRun:
-    from crawlforge.evaluation.runner import RetrievalEvaluationRunner
-    from crawlforge.evaluation.semantic_strategy import (
-        SemanticContextEngineStrategy,
-    )
-
     provider = _semantic_provider_from_values(
         model_id=model_id,
         model_revision=model_revision,
@@ -1000,50 +1241,197 @@ async def _evaluate_semantic(
     try:
         indexing = await engine.index_embeddings(provider, batch_size=batch_size)
         index_info = await engine.get_semantic_index_info(provider)
-        model = indexing.model
-        strategy = SemanticContextEngineStrategy(
-            engine,
-            provider,
-            dataset,
-            indexing_result=indexing,
-            index_info=index_info,
-        )
-        configuration: dict[str, object] = {
-            "index": "sqlite_float32_blob",
-            "ranking": "exact_cosine_similarity",
-            "score_order": "descending",
-            "model_id": model.model_id,
-            "model_revision": model.model_revision,
-            "model_fingerprint": model.fingerprint,
-            "provider": model.provider,
-            "dimension": model.dimension,
-            "precision": model.precision,
-            "normalized": model.normalized,
-            "document_format_version": model.document_format_version,
-            "query_format_version": model.query_format_version,
-            "batch_size": batch_size,
-        }
-        runner = RetrievalEvaluationRunner(
+        return await _evaluate_semantic_prepared(
+            engine=engine,
+            provider=provider,
             dataset=dataset,
-            retriever=strategy,
             corpus_statistics=corpus_statistics,
-            retrieval_configuration=configuration,
             chunking_configuration=chunking_configuration,
-        )
-        evaluation = await runner.run(
             limits=limits,
             token_budget=token_budget,
             repeat_latency=repeat_latency,
-        )
-        return replace(
-            evaluation,
-            retrieval_configuration={
-                **evaluation.retrieval_configuration,
-                **strategy.performance_metadata(),
-            },
+            batch_size=batch_size,
+            indexing=indexing,
+            index_info=index_info,
         )
     finally:
         await provider.close()
+
+
+async def _evaluate_semantic_prepared(
+    *,
+    engine: ContextEngine,
+    provider: EmbeddingProvider,
+    dataset: EvaluationDataset,
+    corpus_statistics: CorpusStatistics,
+    chunking_configuration: dict[str, object],
+    limits: tuple[int, ...],
+    token_budget: int,
+    repeat_latency: int,
+    batch_size: int,
+    indexing: SemanticIndexingResult,
+    index_info: SemanticIndexInfo,
+) -> EvaluationRun:
+    from crawlforge.evaluation.runner import RetrievalEvaluationRunner
+    from crawlforge.evaluation.semantic_strategy import (
+        SemanticContextEngineStrategy,
+    )
+
+    model = indexing.model
+    strategy = SemanticContextEngineStrategy(
+        engine,
+        provider,
+        dataset,
+        indexing_result=indexing,
+        index_info=index_info,
+    )
+    configuration: dict[str, object] = {
+        "index": "sqlite_float32_blob",
+        "ranking": "exact_cosine_similarity",
+        "score_order": "descending",
+        "model_id": model.model_id,
+        "model_revision": model.model_revision,
+        "model_fingerprint": model.fingerprint,
+        "provider": model.provider,
+        "dimension": model.dimension,
+        "precision": model.precision,
+        "normalized": model.normalized,
+        "document_format_version": model.document_format_version,
+        "query_format_version": model.query_format_version,
+        "batch_size": batch_size,
+    }
+    runner = RetrievalEvaluationRunner(
+        dataset=dataset,
+        retriever=strategy,
+        corpus_statistics=corpus_statistics,
+        retrieval_configuration=configuration,
+        chunking_configuration=chunking_configuration,
+    )
+    evaluation = await runner.run(
+        limits=limits,
+        token_budget=token_budget,
+        repeat_latency=repeat_latency,
+    )
+    return replace(
+        evaluation,
+        retrieval_configuration={
+            **evaluation.retrieval_configuration,
+            **strategy.performance_metadata(),
+        },
+    )
+
+
+async def _evaluate_hybrid(
+    *,
+    engine: ContextEngine,
+    dataset: EvaluationDataset,
+    corpus_statistics: CorpusStatistics,
+    chunking_configuration: dict[str, object],
+    limits: tuple[int, ...],
+    token_budget: int,
+    repeat_latency: int,
+    model_id: str,
+    model_revision: str | None,
+    dimension: int,
+    device: str,
+    batch_size: int,
+    cache_directory: Path | None,
+    local_files_only: bool,
+    hybrid_config: HybridSearchConfig,
+) -> EvaluationRun:
+    provider = _semantic_provider_from_values(
+        model_id=model_id,
+        model_revision=model_revision,
+        dimension=dimension,
+        device=device,
+        batch_size=batch_size,
+        cache_directory=cache_directory,
+        local_files_only=local_files_only,
+    )
+    try:
+        indexing = await engine.index_embeddings(provider, batch_size=batch_size)
+        index_info = await engine.get_semantic_index_info(provider)
+        return await _evaluate_hybrid_prepared(
+            engine=engine,
+            provider=provider,
+            dataset=dataset,
+            corpus_statistics=corpus_statistics,
+            chunking_configuration=chunking_configuration,
+            limits=limits,
+            token_budget=token_budget,
+            repeat_latency=repeat_latency,
+            batch_size=batch_size,
+            indexing=indexing,
+            index_info=index_info,
+            hybrid_config=hybrid_config,
+        )
+    finally:
+        await provider.close()
+
+
+async def _evaluate_hybrid_prepared(
+    *,
+    engine: ContextEngine,
+    provider: EmbeddingProvider,
+    dataset: EvaluationDataset,
+    corpus_statistics: CorpusStatistics,
+    chunking_configuration: dict[str, object],
+    limits: tuple[int, ...],
+    token_budget: int,
+    repeat_latency: int,
+    batch_size: int,
+    indexing: SemanticIndexingResult,
+    index_info: SemanticIndexInfo,
+    hybrid_config: HybridSearchConfig,
+) -> EvaluationRun:
+    from crawlforge.evaluation.hybrid_strategy import HybridContextEngineStrategy
+    from crawlforge.evaluation.runner import RetrievalEvaluationRunner
+
+    model = indexing.model
+    strategy = HybridContextEngineStrategy(
+        engine,
+        provider,
+        dataset,
+        config=hybrid_config,
+        indexing_result=indexing,
+        index_info=index_info,
+    )
+    configuration: dict[str, object] = {
+        "index": "sqlite_fts5+sqlite_float32_blob",
+        "ranking": "reciprocal_rank_fusion",
+        "fusion_strategy": "reciprocal-rank-fusion",
+        "score_order": "descending",
+        "model_id": model.model_id,
+        "model_revision": model.model_revision,
+        "model_fingerprint": model.fingerprint,
+        "provider": model.provider,
+        "dimension": model.dimension,
+        "precision": model.precision,
+        "normalized": model.normalized,
+        "document_format_version": model.document_format_version,
+        "query_format_version": model.query_format_version,
+        "batch_size": batch_size,
+        **asdict(hybrid_config),
+    }
+    runner = RetrievalEvaluationRunner(
+        dataset=dataset,
+        retriever=strategy,
+        corpus_statistics=corpus_statistics,
+        retrieval_configuration=configuration,
+        chunking_configuration=chunking_configuration,
+    )
+    evaluation = await runner.run(
+        limits=limits,
+        token_budget=token_budget,
+        repeat_latency=repeat_latency,
+    )
+    return replace(
+        evaluation,
+        retrieval_configuration={
+            **evaluation.retrieval_configuration,
+            **strategy.performance_metadata(),
+        },
+    )
 
 
 def _semantic_provider_from_values(
@@ -1110,6 +1498,22 @@ def _parse_limit_values(value: str) -> tuple[int, ...]:
     return limits
 
 
+def _parse_evaluation_strategies(value: str) -> tuple[str, ...]:
+    strategies = tuple(item.strip() for item in value.split(",") if item.strip())
+    if len(strategies) < 2:
+        raise ValueError("strategies must contain at least two retrieval strategies")
+    unsupported = tuple(
+        strategy
+        for strategy in strategies
+        if strategy not in ("bm25", "semantic", "hybrid")
+    )
+    if unsupported:
+        raise ValueError("unsupported retrieval strategies: " + ", ".join(unsupported))
+    if len(set(strategies)) != len(strategies):
+        raise ValueError("strategies must not contain duplicates")
+    return strategies
+
+
 def _print_evaluation_summary(
     evaluation: EvaluationRun,
     *,
@@ -1173,6 +1577,42 @@ def _print_comparison_summary(
         f"MRR: {_optional_metric(metrics['MRR'].bm25)} -> "
         f"{_optional_metric(metrics['MRR'].semantic)} "
         f"({_optional_delta(metrics['MRR'].delta)})."
+    )
+    print(f"Report: {output}")
+
+
+def _print_multi_comparison_summary(
+    comparison: MultiEvaluationComparison,
+    *,
+    output: Path,
+    json_output: bool,
+) -> None:
+    mrr = next(
+        metric for metric in comparison.aggregate_metrics if metric.metric == "MRR"
+    )
+    mrr_values = {value.strategy_alias: value.value for value in mrr.values}
+    aliases = tuple(strategy.alias for strategy in comparison.strategies)
+    payload = {
+        "dataset": comparison.dataset_name,
+        "version": comparison.dataset_version,
+        "signature": comparison.dataset_signature,
+        "strategies": list(aliases),
+        "mrr": mrr_values,
+        "queries": len(comparison.query_comparisons),
+        "report": str(output),
+    }
+    if json_output:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        return
+    print(
+        f"Compared {', '.join(aliases)} on {len(comparison.query_comparisons)} queries."
+    )
+    print(
+        "MRR: "
+        + "; ".join(
+            f"{alias}={_optional_metric(mrr_values[alias])}" for alias in aliases
+        )
+        + "."
     )
     print(f"Report: {output}")
 
@@ -1307,6 +1747,53 @@ def _print_semantic_context_result(
     print(f"Estimated context reduction: {result.estimated_context_reduction:.1%}")
 
 
+def _print_hybrid_context_result(
+    result: HybridContextResult,
+    *,
+    json_output: bool,
+) -> None:
+    if json_output:
+        print(
+            json.dumps(
+                _hybrid_context_payload(result),
+                ensure_ascii=False,
+                sort_keys=True,
+                allow_nan=False,
+            )
+        )
+        return
+    if not result.hits:
+        print("No matching hybrid context found.")
+    for hit in result.hits:
+        section = " > ".join(hit.chunk.heading_path)
+        print(f"{hit.rank}. {hit.source.title or hit.source.url}")
+        print(f"   URL: {hit.source.url}")
+        print(f"   RRF score: {hit.rrf_score:.8f} (higher is more relevant)")
+        print(
+            "   Component ranks: "
+            f"BM25 {_optional_rank(hit.bm25_rank)}; "
+            f"semantic {_optional_rank(hit.semantic_rank)}"
+        )
+        if section:
+            print(f"   Heading: {section}")
+        print(f"   Estimated tokens: {hit.chunk.estimated_tokens}")
+        print(f"   {hit.chunk.text}")
+    print(
+        "Context: "
+        f"~{result.estimated_tokens}/{result.token_budget} estimated tokens, "
+        f"{result.total_size_chars} characters, "
+        f"{result.candidates_considered} candidates"
+    )
+    config = result.fusion_configuration
+    print(
+        "Fusion: reciprocal-rank-fusion "
+        f"(k={config.rrf_k}, BM25 weight={config.bm25_weight:g}, "
+        f"semantic weight={config.semantic_weight:g})"
+    )
+    print(f"Model fingerprint: {result.model_fingerprint}")
+    print(f"Estimated context reduction: {result.estimated_context_reduction:.1%}")
+
+
 def _context_payload(result: ContextResult) -> dict[str, object]:
     return {
         "query": result.query,
@@ -1376,6 +1863,68 @@ def _semantic_hit_payload(hit: SemanticSearchHit) -> dict[str, object]:
         "chunk_id": hit.chunk.id,
         "document_id": hit.source.document_id,
     }
+
+
+def _hybrid_context_payload(result: HybridContextResult) -> dict[str, object]:
+    return {
+        "query": result.query,
+        "retrieval_strategy": result.retrieval_strategy,
+        "fusion_strategy": result.fusion_strategy,
+        "score_type": result.score_type,
+        "model_id": result.model_id,
+        "model_revision": result.model_revision,
+        "model_fingerprint": result.model_fingerprint,
+        "fusion_configuration": asdict(result.fusion_configuration),
+        "results": [_hybrid_hit_payload(hit) for hit in result.hits],
+        "total_size_chars": result.total_size_chars,
+        "estimated_tokens": result.estimated_tokens,
+        "candidates_considered": result.candidates_considered,
+        "search_time_ms": result.search_time_ms,
+        "context_selection_time_ms": result.context_selection_time_ms,
+        "limit": result.limit,
+        "token_budget": result.token_budget,
+        "source_estimated_tokens": result.source_estimated_tokens,
+        "estimated_context_reduction": result.estimated_context_reduction,
+        "index_hit": result.index_hit,
+        "metrics": asdict(result.metrics),
+    }
+
+
+def _hybrid_hit_payload(hit: HybridSearchHit) -> dict[str, object]:
+    return {
+        "identity": hit.identity,
+        "rank": hit.rank,
+        "retrieval_strategy": hit.retrieval_strategy,
+        "fusion_strategy": hit.fusion_strategy,
+        "score_type": hit.score_type,
+        "rrf_score": hit.rrf_score,
+        "bm25_rank": hit.bm25_rank,
+        "semantic_rank": hit.semantic_rank,
+        "bm25_contribution": hit.bm25_contribution,
+        "semantic_contribution": hit.semantic_contribution,
+        "bm25_score": hit.bm25_score,
+        "cosine_similarity": hit.cosine_similarity,
+        "contributions": [asdict(item) for item in hit.contributions],
+        "model_id": hit.model_id,
+        "model_revision": hit.model_revision,
+        "model_fingerprint": hit.model_fingerprint,
+        "fusion_configuration": asdict(hit.fusion_configuration),
+        "url": hit.source.url,
+        "canonical_url": hit.source.canonical_url,
+        "title": hit.source.title,
+        "fetched_at": hit.source.fetched_at.isoformat(),
+        "section": list(hit.chunk.heading_path),
+        "text": hit.chunk.text,
+        "size_chars": hit.chunk.size_chars,
+        "estimated_tokens": hit.chunk.estimated_tokens,
+        "chunk_id": hit.chunk.id,
+        "content_hash": hit.chunk.content_hash,
+        "document_id": hit.source.document_id,
+    }
+
+
+def _optional_rank(value: int | None) -> str:
+    return str(value) if value is not None else "n/a"
 
 
 def _optional_metric(value: float | None) -> str:

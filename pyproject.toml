@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "crawlforge"
 dynamic = ["version"]
-description = "Local-first web-context engine with BM25 retrieval and MCP."
+description = "Local-first web-context engine with lexical, semantic, and hybrid retrieval."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
@@ -16,6 +16,7 @@ keywords = [
   "bm25",
   "crawler",
   "fts5",
+  "hybrid-search",
   "information-retrieval",
   "mcp",
   "sqlite",
